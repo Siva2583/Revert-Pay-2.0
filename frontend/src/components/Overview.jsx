@@ -147,6 +147,12 @@ function Overview({ token, role, setPage }) {
                 ? "Track your ledger-derived balance, protected purchases, and deliveries awaiting confirmation."
                 : "Track your ledger-derived balance, incoming protected payments, and orders ready to ship."}
           </p>
+          <div className="hero-balance">
+            <span>{isAdmin ? "Holding-account balance" : "Available balance"}</span>
+            <strong>{formatMoney(metrics.balance)}</strong>
+            <small>Calculated from ledger entries</small>
+          </div>
+
           <div className="button-group">
             {role === "BUYER" && <Button icon="plus" onClick={() => setPage("escrow")}>Initiate payment</Button>}
             {role === "SELLER" && <Button icon="package" onClick={() => setPage("seller-escrows")}>Manage orders</Button>}
@@ -176,8 +182,7 @@ function Overview({ token, role, setPage }) {
         </button>
       </section>
 
-      <section className="metrics-grid" aria-label="Financial overview">
-        <article className="metric-card metric-card-emphasis"><div className="metric-card-top"><span className="metric-label">{isAdmin ? "Holding balance" : "Available balance"}</span><span className="metric-icon metric-icon-success"><Icon name="wallet" size={18} /></span></div><strong className="metric-value">{formatMoney(metrics.balance)}</strong><p>Calculated from ledger entries</p></article>
+      <section className="metrics-grid metrics-three overview-metrics" aria-label="Financial overview">
         <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Ledger entries</span><span className="metric-icon"><Icon name="book" size={18} /></span></div><strong className="metric-value">{metrics.ledgerCount}</strong><p>{isAdmin ? "Total holding-account records" : "Records on your account"}</p></article>
         <article className="metric-card"><div className="metric-card-top"><span className="metric-label">{isAdmin ? "Open disputes" : "Active escrows"}</span><span className="metric-icon"><Icon name="shield" size={18} /></span></div><strong className="metric-value">{metrics.active}</strong><p>{isAdmin ? "Currently under review" : "Funded, shipped, or under review"}</p></article>
         <article className="metric-card"><div className="metric-card-top"><span className="metric-label">{isAdmin ? "Disputed value" : "Protected value"}</span><span className="metric-icon"><Icon name="lock" size={18} /></span></div><strong className="metric-value">{formatMoney(metrics.protectedAmount)}</strong><p>{isAdmin ? "Value in the returned dispute queue" : "Amount in active protected escrows"}</p></article>

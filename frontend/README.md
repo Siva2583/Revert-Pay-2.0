@@ -30,7 +30,8 @@ npm run build
 - `src/utils/` — formatting, role, navigation, and escrow helpers
 - `src/index.css` — design tokens, local font stacks, and global foundation
 - `src/App.css` — shared component and responsive styles
-- `src/styles/editorial.css` — editorial authentication and workspace art direction
+- `src/styles/editorial.css` — editorial authentication and shared art direction
+- `src/styles/workspace.css` — authenticated dashboard, navigation, and financial workflow design
 - `src/assets/` — optimized local editorial artwork
 
 Manrope and IBM Plex Mono are served locally through Fontsource; the interface does not depend on a third-party font CDN.

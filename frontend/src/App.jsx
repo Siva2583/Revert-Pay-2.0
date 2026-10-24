@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import "./styles/editorial.css";
+import "./styles/workspace.css";
 
 import AuthScreen from "./components/AuthScreen";
 import ResetPassword from "./components/ResetPassword";
