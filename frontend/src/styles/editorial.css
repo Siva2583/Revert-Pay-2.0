@@ -1,0 +1,1126 @@
+/*
+ * RevertPay editorial theme
+ * A higher-contrast visual layer built on the shared design tokens.
+ */
+
+body {
+  letter-spacing: -0.012em;
+}
+
+.surface-card,
+.metric-card,
+.escrow-card,
+.account-summary-card {
+  border-color: #dce2da;
+  border-radius: 16px;
+  box-shadow: 0 1px 1px rgba(14, 35, 26, 0.02), 0 12px 34px rgba(14, 35, 26, 0.035);
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+}
+
+.section-heading h2 {
+  font-size: 21px;
+  font-weight: 720;
+  letter-spacing: -0.035em;
+}
+
+.section-heading > div > p:last-child:not(.eyebrow),
+.section-heading-with-icon p:last-child:not(.eyebrow) {
+  color: #5d6b63;
+  font-size: 13px;
+}
+
+.button {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 720;
+  letter-spacing: -0.015em;
+}
+
+.button-primary {
+  border-color: #087458;
+  background: #087458;
+  box-shadow: 0 7px 18px rgba(8, 116, 88, 0.17);
+}
+
+.button-primary:hover:not(:disabled) {
+  border-color: #055b45;
+  background: #055b45;
+  box-shadow: 0 9px 22px rgba(8, 116, 88, 0.22);
+}
+
+.button-secondary {
+  border-color: #ccd5cc;
+}
+
+.button-small {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.icon-button {
+  border-radius: 10px;
+}
+
+.form-field > label,
+.role-fieldset > legend {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.input-shell {
+  min-height: 50px;
+  border-color: #ccd5cc;
+  border-radius: 11px;
+  box-shadow: 0 1px 2px rgba(15, 35, 26, 0.025);
+}
+
+.input-shell input {
+  min-height: 48px;
+  padding-right: 14px;
+  padding-left: 14px;
+  font-size: 14px;
+}
+
+.input-shell:focus-within,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: #168a69;
+  box-shadow: 0 0 0 4px rgba(22, 138, 105, 0.12);
+}
+
+.form-field select {
+  min-height: 50px;
+  border-color: #ccd5cc;
+  border-radius: 11px;
+}
+
+.form-field textarea {
+  border-color: #ccd5cc;
+  border-radius: 11px;
+  font-size: 14px;
+}
+
+.field-message {
+  font-size: 11px;
+}
+
+.alert {
+  padding: 15px 16px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
+.alert-content > strong {
+  font-size: 13px;
+}
+
+.status-badge {
+  min-height: 29px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.empty-state h2,
+.error-state h2 {
+  font-size: 22px;
+  letter-spacing: -0.035em;
+}
+
+.empty-state > p,
+.error-state > p {
+  font-size: 14px;
+}
+
+/* Signature authentication composition */
+.auth-shell {
+  grid-template-columns: minmax(500px, 1.12fr) minmax(470px, 0.88fr);
+  background: #f3f1eb;
+}
+
+.auth-intro {
+  position: relative;
+  isolation: isolate;
+  padding: 36px 44px 28px;
+  overflow: hidden;
+  background: #06110e;
+}
+
+.auth-artwork {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 54%;
+}
+
+.auth-art-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(2, 12, 9, 0.06) 0%, rgba(2, 12, 9, 0.12) 42%, rgba(2, 12, 9, 0.7) 100%);
+}
+
+.auth-brand,
+.auth-copy,
+.auth-principles,
+.auth-footer-note {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand .logo-wordmark {
+  font-size: 23px;
+  font-weight: 720;
+  letter-spacing: -0.05em;
+}
+
+.auth-brand svg {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.auth-copy {
+  max-width: 590px;
+  margin: clamp(74px, 11vh, 126px) 0 auto;
+  padding: 0;
+}
+
+.auth-copy > .eyebrow {
+  color: #a5c3b6;
+  font-size: 10px;
+}
+
+.auth-copy h1 {
+  max-width: 600px;
+  margin-top: 18px;
+  color: #f4f6f0;
+  font-size: clamp(52px, 5.3vw, 76px);
+  font-weight: 570;
+  letter-spacing: -0.068em;
+  line-height: 0.98;
+}
+
+.auth-copy h1 span {
+  display: block;
+  margin-top: 7px;
+  color: var(--mint);
+  font-weight: 710;
+}
+
+.auth-copy > p:not(.eyebrow) {
+  max-width: 445px;
+  margin-top: 23px;
+  color: #b3c6bc;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  line-height: 1.7;
+}
+
+.auth-principles {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: auto;
+  padding-top: 46px;
+  flex-wrap: wrap;
+}
+
+.auth-principles > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #d7e4dd;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.auth-principles svg {
+  color: var(--mint);
+}
+
+.auth-footer-note {
+  margin-top: 20px;
+  color: #88a398;
+  font-size: 10px;
+}
+
+.auth-form-panel {
+  padding: 44px 56px;
+  background: #f3f1eb;
+}
+
+.auth-form-wrap {
+  width: min(100%, 430px);
+}
+
+.form-heading > .eyebrow {
+  color: #397563;
+}
+
+.form-heading h2 {
+  margin-top: 11px;
+  color: #101b16;
+  font-size: 42px;
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.form-heading > p:last-child {
+  max-width: 370px;
+  margin-top: 14px;
+  color: #657067;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.auth-form {
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.auth-form .input-shell {
+  min-height: 53px;
+  border-color: #cfd4cb;
+  background: #fff;
+}
+
+.auth-form .input-shell input {
+  min-height: 51px;
+}
+
+.auth-form .button {
+  min-height: 53px;
+}
+
+.auth-form-panel .button-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  box-shadow: 0 9px 22px rgba(7, 21, 17, 0.15);
+}
+
+.auth-form-panel .button-primary:hover:not(:disabled) {
+  border-color: #123a2d;
+  background: #123a2d;
+}
+
+.auth-form-panel .text-button {
+  color: #09664e;
+}
+
+.role-option {
+  min-height: 64px;
+  border-color: #cfd4cb;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.role-option.selected {
+  border-color: #16765b;
+  background: #e4f1e8;
+}
+
+.role-option strong {
+  font-size: 13px;
+}
+
+.role-option small {
+  font-size: 11px;
+}
+
+.auth-mode-switch {
+  margin-top: 28px;
+  padding-top: 24px;
+  font-size: 13px;
+}
+
+/* High-contrast workspace shell */
+.sidebar {
+  border-right: 1px solid #1b2b25;
+  background: var(--ink);
+  color: #f3f7f4;
+}
+
+.sidebar-brand {
+  padding: 0 9px;
+}
+
+.sidebar-brand svg {
+  border-radius: 11px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+.sidebar-brand-copy strong {
+  color: #f7faf7;
+  font-size: 18px;
+  font-weight: 710;
+}
+
+.sidebar-brand-copy span {
+  color: #6f8a7e;
+  font-size: 10px;
+}
+
+.sidebar-section-label {
+  color: #5f7b6e;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.sidebar-navigation {
+  margin-top: 48px;
+}
+
+.side-nav {
+  gap: 5px;
+}
+
+.side-nav button {
+  min-height: 46px;
+  border-radius: 10px;
+  color: #8ca69a;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.side-nav button svg {
+  color: #6c8b7d;
+}
+
+.side-nav button:hover {
+  background: #10251e;
+  color: #ecf5ef;
+}
+
+.side-nav button:hover svg {
+  color: #b1cabd;
+}
+
+.side-nav button.current {
+  border-color: var(--mint);
+  background: var(--mint);
+  color: var(--ink);
+  box-shadow: 0 7px 20px rgba(118, 225, 175, 0.09);
+  font-weight: 760;
+}
+
+.side-nav button.current svg {
+  color: var(--ink);
+}
+
+.nav-current-mark {
+  background: var(--ink);
+}
+
+.workspace-identity {
+  border-color: #20352c;
+}
+
+.workspace-avatar {
+  background: #132a22;
+  color: #9bb7aa;
+}
+
+.workspace-identity span {
+  color: #678578;
+}
+
+.workspace-identity strong {
+  color: #e6f0e9;
+  font-size: 12px;
+}
+
+.workspace-lock {
+  color: #638073;
+}
+
+.sign-out {
+  min-height: 45px;
+  color: #8ca69a;
+  font-size: 13px;
+}
+
+.sign-out:hover {
+  background: #2a1c19;
+  color: #f0b4a9;
+}
+
+.sidebar-close {
+  border-color: #2b3e35;
+  background: #10251e;
+  color: #d9e7df;
+}
+
+.topbar {
+  min-height: 112px;
+  padding: 23px 40px;
+  border-bottom-color: #dce2da;
+  background: rgba(241, 243, 238, 0.9);
+}
+
+.topbar h1 {
+  margin-top: 6px;
+  font-size: 29px;
+  font-weight: 690;
+  letter-spacing: -0.045em;
+}
+
+.topbar-description {
+  margin-top: 6px;
+  color: #657168;
+  font-size: 13px;
+}
+
+.breadcrumb {
+  font-size: 10px;
+  letter-spacing: 0.01em;
+}
+
+.session-badge,
+.role-badge {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.role-badge {
+  border-color: #b9d8c6;
+  background: #e4f1e8;
+}
+
+.workspace-content {
+  padding: 34px 40px 60px;
+}
+
+/* Dashboard editorial hero */
+.overview-topline > span {
+  font-size: 12px;
+}
+
+.overview-welcome {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 34px;
+  padding: 36px;
+  overflow: hidden;
+  border: 1px solid #142c23;
+  border-radius: 19px;
+  background: var(--ink);
+  box-shadow: 0 20px 48px rgba(7, 21, 17, 0.12);
+}
+
+.overview-welcome::before {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(173, 243, 207, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(173, 243, 207, 0.035) 1px, transparent 1px);
+  background-size: 34px 34px;
+  content: "";
+  mask-image: linear-gradient(90deg, black, transparent 80%);
+  pointer-events: none;
+}
+
+.overview-welcome-copy,
+.attention-card {
+  position: relative;
+  z-index: 1;
+}
+
+.overview-welcome-copy > .eyebrow {
+  color: #91b6a5;
+}
+
+.overview-welcome-copy h2 {
+  max-width: 730px;
+  margin-top: 12px;
+  color: #f2f7f3;
+  font-size: clamp(34px, 3.4vw, 46px);
+  font-weight: 590;
+  letter-spacing: -0.057em;
+  line-height: 1.04;
+}
+
+.overview-welcome-copy > p:not(.eyebrow) {
+  max-width: 650px;
+  margin-top: 16px;
+  color: #a9c0b4;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.overview-welcome-copy .button-group {
+  margin-top: 26px;
+}
+
+.overview-welcome .button-primary {
+  border-color: var(--mint);
+  background: var(--mint);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.overview-welcome .button-primary:hover:not(:disabled) {
+  border-color: #c4f9de;
+  background: #c4f9de;
+}
+
+.overview-welcome .button-secondary {
+  border-color: #344b40;
+  background: #10271f;
+  color: #e5f0e9;
+  box-shadow: none;
+}
+
+.overview-welcome .button-secondary:hover:not(:disabled) {
+  border-color: #527062;
+  background: #173229;
+}
+
+.overview-welcome .button-ghost {
+  color: var(--mint);
+}
+
+.overview-welcome .button-ghost:hover:not(:disabled) {
+  background: #143027;
+}
+
+.attention-card {
+  min-height: 246px;
+  padding: 23px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--mint);
+  color: var(--ink);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.attention-card:hover {
+  background: #c2f8dc;
+}
+
+.attention-card-icon {
+  border-color: rgba(7, 21, 17, 0.12);
+  background: rgba(7, 21, 17, 0.07);
+  color: var(--ink);
+}
+
+.attention-card-label {
+  color: #386d57;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+}
+
+.attention-card > strong {
+  color: var(--ink);
+  font-size: 52px;
+  font-weight: 620;
+}
+
+.attention-card > p {
+  color: #285642;
+  font-size: 12px;
+}
+
+.attention-link {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.metric-card {
+  min-height: 150px;
+  padding: 22px 23px;
+}
+
+.metric-card-emphasis {
+  border-color: #b8d9c5;
+  background: #e2f1e7;
+}
+
+.metric-label {
+  color: #5a6960;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.metric-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.metric-value {
+  margin-top: 12px;
+  font-size: clamp(25px, 2.2vw, 31px);
+  font-weight: 680;
+  letter-spacing: -0.05em;
+}
+
+.metric-card > p {
+  margin-top: 7px;
+  color: #748077;
+  font-size: 11px;
+}
+
+.metric-account-number {
+  font-size: clamp(17px, 1.7vw, 22px);
+}
+
+.activity-panel > .section-heading,
+.data-panel > .section-heading {
+  padding: 23px 24px 20px;
+}
+
+.ledger-activity-item,
+.escrow-activity-item {
+  padding: 17px 22px;
+}
+
+.activity-primary strong {
+  font-size: 13px;
+}
+
+.activity-primary span {
+  font-size: 11px;
+}
+
+.activity-secondary > strong {
+  font-size: 13px;
+}
+
+.activity-secondary time {
+  font-size: 10px;
+}
+
+/* Financial records and workflows */
+.account-summary-card {
+  border-radius: 17px;
+}
+
+.account-balance-block {
+  border-right-color: #1c382d;
+  background: var(--ink);
+}
+
+.account-balance-block > .eyebrow {
+  color: #88ab9b;
+}
+
+.account-balance {
+  color: #f3f8f4;
+  font-size: clamp(34px, 4.2vw, 48px);
+  font-weight: 630;
+}
+
+.balance-explanation {
+  color: #9bb3a7;
+  font-size: 12px;
+}
+
+.account-identity-block {
+  padding: 30px;
+}
+
+.account-profile-heading h2 {
+  font-size: 23px;
+}
+
+.account-detail-list dt,
+.confirmation-details dt,
+.detail-grid dt,
+.party-details dt,
+.dispute-details-grid dt {
+  font-size: 11px;
+}
+
+.account-detail-list dd,
+.confirmation-details dd,
+.detail-grid dd,
+.party-details dd,
+.dispute-details-grid dd {
+  font-size: 13px;
+}
+
+.guidance-panel {
+  border-color: #142c23;
+  border-radius: 17px;
+  background: var(--ink);
+}
+
+.guidance-panel > h2 {
+  font-size: 27px;
+  font-weight: 620;
+}
+
+.guidance-panel > p:not(.eyebrow),
+.guidance-list p {
+  font-size: 12px;
+}
+
+.guidance-list strong {
+  font-size: 13px;
+}
+
+.form-card,
+.confirmation-card,
+.escrow-review-card {
+  padding: 30px;
+}
+
+.escrow-card-header {
+  padding: 23px 25px;
+}
+
+.escrow-card-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.escrow-facts {
+  padding: 24px 25px;
+}
+
+.escrow-facts dt {
+  font-size: 11px;
+}
+
+.escrow-facts dd {
+  font-size: 13px;
+}
+
+.escrow-amount-fact dd {
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.lifecycle-label {
+  font-size: 10px;
+}
+
+.escrow-context {
+  padding: 15px 16px;
+}
+
+.escrow-context > div > strong,
+.escrow-action-panel strong,
+.review-action-panel strong {
+  font-size: 13px;
+}
+
+.escrow-context p,
+.escrow-action-panel p,
+.review-action-panel p {
+  font-size: 11px;
+}
+
+.list-toolbar {
+  border-radius: 13px;
+}
+
+.search-control input,
+.filter-control select {
+  font-size: 12px;
+}
+
+.list-result-count {
+  font-size: 11px;
+}
+
+.data-table th {
+  padding: 13px 19px;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+}
+
+.data-table td {
+  padding: 16px 19px;
+  font-size: 12px;
+}
+
+.ledger-entry-cell strong {
+  font-size: 12px;
+}
+
+.ledger-entry-cell > div > span,
+.reference-value,
+.table-date {
+  font-size: 10px;
+}
+
+.money-cell {
+  font-size: 13px !important;
+}
+
+.transaction-overview-card {
+  border-radius: 12px;
+  background: #e2f1e7;
+}
+
+.detail-section {
+  border-radius: 12px;
+}
+
+.detail-section-heading h3 {
+  font-size: 14px;
+}
+
+.modal-header h2 {
+  font-size: 23px;
+}
+
+.toast {
+  border-radius: 14px;
+  box-shadow: 0 18px 55px rgba(7, 21, 17, 0.17);
+}
+
+.toast-content strong {
+  font-size: 13px;
+}
+
+.toast-content p {
+  font-size: 12px;
+}
+
+/* Recovery uses the same editorial art direction */
+.reset-password-shell {
+  position: relative;
+  isolation: isolate;
+  background: var(--ink);
+}
+
+.reset-password-shell::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(7, 21, 17, 0.1), rgba(7, 21, 17, 0.7)), url("../assets/revertpay-editorial.webp") left center / cover no-repeat;
+  content: "";
+  opacity: 0.72;
+}
+
+.reset-password-card {
+  position: relative;
+  z-index: 1;
+  padding: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 20px;
+  background: #f3f1eb;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.3);
+}
+
+.reset-password-card h1 {
+  font-size: 34px;
+  font-weight: 650;
+}
+
+@media (min-width: 1000px) {
+  .reset-password-shell {
+    place-items: center end;
+    padding-right: 9vw;
+  }
+}
+
+@media (max-width: 1200px) {
+  .auth-shell {
+    grid-template-columns: minmax(450px, 1fr) minmax(430px, 0.9fr);
+  }
+
+  .auth-form-panel {
+    padding-right: 38px;
+    padding-left: 38px;
+  }
+
+  .auth-copy h1 {
+    font-size: clamp(50px, 5.5vw, 68px);
+  }
+
+  .overview-welcome {
+    grid-template-columns: minmax(0, 1fr) 230px;
+    padding: 30px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .topbar {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .workspace-content {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+}
+
+@media (max-width: 860px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-intro {
+    min-height: 690px;
+    padding: 32px 34px;
+  }
+
+  .auth-copy {
+    max-width: 580px;
+    margin: 72px 0 auto;
+    padding: 0;
+  }
+
+  .auth-copy h1 {
+    max-width: 560px;
+    font-size: 60px;
+  }
+
+  .auth-principles {
+    margin-top: auto;
+  }
+
+  .auth-form-panel {
+    padding: 54px 32px;
+  }
+
+  .overview-welcome {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+}
+
+@media (max-width: 700px) {
+  .topbar {
+    padding: 18px;
+  }
+
+  .topbar h1 {
+    font-size: 25px;
+  }
+
+  .workspace-content {
+    padding: 22px 16px 42px;
+  }
+
+  .overview-welcome {
+    grid-template-columns: 1fr;
+    padding: 25px;
+  }
+
+  .overview-welcome-copy h2 {
+    font-size: 35px;
+  }
+
+  .attention-card {
+    min-height: 190px;
+  }
+
+  .metric-card {
+    padding: 18px;
+  }
+
+  .metric-value {
+    font-size: 24px;
+  }
+
+  .auth-intro {
+    min-height: 610px;
+    padding: 27px 24px;
+  }
+
+  .auth-intro .auth-brand {
+    display: block;
+  }
+
+  .auth-copy {
+    margin: 60px 0 auto;
+  }
+
+  .auth-copy h1 {
+    font-size: 47px;
+  }
+
+  .auth-copy > p:not(.eyebrow) {
+    max-width: 360px;
+    font-size: 13px;
+  }
+
+  .auth-principles {
+    gap: 12px 18px;
+    padding-top: 35px;
+  }
+
+  .auth-principles > span {
+    font-size: 10px;
+  }
+
+  .auth-form-panel {
+    padding: 42px 22px;
+  }
+
+  .mobile-brand {
+    display: none;
+  }
+
+  .form-heading h2 {
+    font-size: 36px;
+  }
+
+  .form-card,
+  .confirmation-card,
+  .escrow-review-card {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .overview-welcome {
+    padding: 22px;
+  }
+
+  .overview-welcome-copy h2 {
+    font-size: 32px;
+  }
+
+  .overview-welcome-copy > p:not(.eyebrow) {
+    font-size: 13px;
+  }
+
+  .auth-intro {
+    min-height: 560px;
+  }
+
+  .auth-copy {
+    margin-top: 48px;
+  }
+
+  .auth-copy h1 {
+    font-size: 42px;
+  }
+
+  .auth-copy > p:not(.eyebrow) {
+    display: none;
+  }
+
+  .auth-principles > span {
+    font-size: 9px;
+  }
+
+  .auth-footer-note {
+    font-size: 9px;
+  }
+
+  .form-heading h2 {
+    font-size: 34px;
+  }
+
+  .reset-password-card {
+    padding: 28px 22px;
+  }
+}

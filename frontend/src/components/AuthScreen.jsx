@@ -1,9 +1,19 @@
-
 import { useState } from "react";
 import Logo from "./Logo";
 import Icon from "./Icon";
+import Button from "./Button";
+import { Input, PasswordInput } from "./Input";
+import { Alert } from "./Feedback";
 import API from "../services/api";
-import { readResponse } from "../utils/formatters";
+import { apiRequest } from "../services/request";
+import useAsyncAction from "../hooks/useAsyncAction";
+import editorialArtwork from "../assets/revertpay-editorial.webp";
+
+const roles = [
+  { value: "BUYER", label: "Buyer", description: "Make protected purchases", icon: "shield" },
+  { value: "SELLER", label: "Seller", description: "Manage escrow orders", icon: "package" },
+  { value: "ADMIN", label: "Admin", description: "Oversee ledger and disputes", icon: "book" },
+];
 
 function AuthScreen({ onLogin }) {
   const [mode, setMode] = useState("login");
@@ -11,405 +21,190 @@ function AuthScreen({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("BUYER");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetMessage, setResetMessage] = useState("");
+  const { pending, run } = useAsyncAction();
+  const loading = pending !== null;
 
   const submit = async (event) => {
     event.preventDefault();
-    setError("");
-    setLoading(true);
+    if (pending) return;
 
-    try {
-      const isLogin = mode === "login";
+    const isLogin = mode === "login";
+    const payload = isLogin ? { email, password } : { name, email, password, role };
 
-      const response = await fetch(
-        isLogin ? API.login : API.register,
-        {
+    await run(isLogin ? "login" : "register", async () => {
+      setError("");
+      setNotice("");
+
+      try {
+        const data = await apiRequest(isLogin ? API.login : API.register, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            isLogin
-              ? { email, password }
-              : { name, email, password, role }
-          ),
+          body: payload,
+          fallbackMessage: isLogin ? "Sign in could not be completed." : "Registration could not be completed.",
+        });
+
+        if (!isLogin) {
+          setMode("login");
+          setPassword("");
+          setName("");
+          setNotice("Account created successfully. Please sign in.");
+          return;
         }
-      );
 
-      const data = await readResponse(response);
+        const newToken = typeof data === "string" ? data : data?.token || data?.accessToken;
 
-      if (!response.ok) {
-        setError(
-          typeof data === "string"
-            ? data
-            : data.message || "Request could not be completed."
-        );
-        return;
+        if (!newToken) {
+          setError("Login succeeded, but the server did not return a token.");
+          return;
+        }
+
+        onLogin(newToken);
+      } catch (authError) {
+        setError(authError.message || "The request could not be completed.");
       }
-
-      if (!isLogin) {
-        setMode("login");
-        setPassword("");
-        setName("");
-        setError("Account created successfully. Please sign in.");
-        return;
-      }
-
-      const token =
-        typeof data === "string"
-          ? data
-          : data.token || data.accessToken;
-
-      if (!token) {
-        setError(
-          "Login succeeded, but the server did not return a token."
-        );
-        return;
-      }
-
-      onLogin(token);
-    } catch {
-      setError("Cannot reach the RevertPay server.");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleForgotPassword = async (event) => {
     event.preventDefault();
-    setError("");
-    setResetMessage("");
-    setLoading(true);
+    if (pending) return;
 
-    try {
-      const response = await fetch(API.forgotPassword, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+    await run("forgot-password", async () => {
+      setError("");
+      setResetMessage("");
 
-      const data = await readResponse(response);
+      try {
+        const data = await apiRequest(API.forgotPassword, {
+          method: "POST",
+          body: { email },
+          fallbackMessage: "The password reset request could not be processed.",
+        });
 
-      if (!response.ok) {
-        setError(
+        setResetMessage(
           typeof data === "string"
             ? data
-            : data.message || "Unable to process your request."
+            : data?.message || "If an account exists with that email, password reset instructions will be sent."
         );
-        return;
+      } catch (resetError) {
+        setError(resetError.message || "The password reset request could not be processed.");
       }
-
-      setResetMessage(
-        typeof data === "string"
-          ? data
-          : data.message ||
-              "If an account exists with that email, password reset instructions will be sent."
-      );
-    } catch {
-      setError("Cannot reach the RevertPay server.");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
+
+  const showForgotPassword = () => {
+    setForgotPassword(true);
+    setError("");
+    setNotice("");
+    setResetMessage("");
+  };
+
+  const backToLogin = () => {
+    setForgotPassword(false);
+    setError("");
+    setResetMessage("");
+  };
+
+  const heading = forgotPassword
+    ? { eyebrow: "Password recovery", title: "Reset your password", description: "Request a secure reset link for your registered email." }
+    : mode === "login"
+      ? { eyebrow: "Secure sign in", title: "Welcome back", description: "Enter your credentials to access your financial workspace." }
+      : { eyebrow: "New workspace", title: "Create your account", description: "Choose a role and register with the existing RevertPay workflow." };
 
   return (
     <main className="auth-shell">
       <section className="auth-intro">
-        <div className="auth-grid" />
+        <img className="auth-artwork" src={editorialArtwork} alt="" aria-hidden="true" />
+        <div className="auth-art-shade" aria-hidden="true" />
+        <div className="auth-brand"><Logo size={40} withWordmark light /></div>
 
-        <div className="intro-content">
-          <div className="auth-brand">
-            <Logo size={36} />
-            <span>RevertPay</span>
-          </div>
-
-          <div className="auth-copy">
-            <p className="micro-label">
-              LEDGER-FIRST ESCROW INFRASTRUCTURE
-            </p>
-
-            <h1>
-              Payments should be
-              <span> provable.</span>
-            </h1>
-
-            <p>
-              A secure transaction workspace built on immutable
-              ledger records, derived balances, and financial
-              correctness.
-            </p>
-          </div>
-
-          <div className="principle-stack">
-            <div className="principle">
-              <div className="principle-icon">
-                <Icon name="book" />
-              </div>
-
-              <div>
-                <strong>Immutable ledger</strong>
-                <span>
-                  Every movement is recorded permanently.
-                </span>
-              </div>
-            </div>
-
-            <div className="principle">
-              <div className="principle-icon">
-                <Icon name="shield" />
-              </div>
-
-              <div>
-                <strong>Secure access</strong>
-                <span>
-                  JWT-protected account operations.
-                </span>
-              </div>
-            </div>
-
-            <div className="principle">
-              <div className="principle-icon">
-                <Icon name="activity" />
-              </div>
-
-              <div>
-                <strong>Derived balances</strong>
-                <span>
-                  Credits minus debits — never mutable totals.
-                </span>
-              </div>
-            </div>
-          </div>
+        <div className="auth-copy">
+          <p className="eyebrow">Protected payments · Provable records</p>
+          <h1>Money moves. <span>Proof stays.</span></h1>
+          <p>Escrow with a memory. Every payment, transition, debit, and credit—organized in one exact financial workspace.</p>
         </div>
 
-        <p className="auth-footer-note">
-          RevertPay / Financial transaction workspace
-        </p>
+        <div className="auth-principles" aria-label="RevertPay principles">
+          <span><Icon name="book" size={17} />Immutable ledger</span>
+          <span><Icon name="shield" size={17} />Protected escrow</span>
+          <span><Icon name="activity" size={17} />Traceable balances</span>
+        </div>
+
+        <p className="auth-footer-note"><Icon name="lock" size={14} />JWT-protected account operations</p>
       </section>
 
       <section className="auth-form-panel">
         <div className="auth-form-wrap">
-          <div className="mobile-brand">
-            <Logo size={34} />
-            <strong>RevertPay</strong>
-          </div>
+          <div className="mobile-brand"><Logo size={36} withWordmark /></div>
 
           <div className="form-heading">
-            <p className="micro-label">
-              {forgotPassword
-                ? "PASSWORD RECOVERY"
-                : mode === "login"
-                  ? "SECURE SIGN IN"
-                  : "NEW OPERATOR"}
-            </p>
-
-            <h2>
-              {forgotPassword
-                ? "Reset your password."
-                : mode === "login"
-                  ? "Welcome back."
-                  : "Create your workspace."}
-            </h2>
-
-            <p>
-              {forgotPassword
-                ? "We'll help you regain access to your workspace."
-                : mode === "login"
-                  ? "Enter your credentials to access your ledger workspace."
-                  : "Register a role to begin using RevertPay."}
-            </p>
+            <p className="eyebrow">{heading.eyebrow}</p>
+            <h2>{heading.title}</h2>
+            <p>{heading.description}</p>
           </div>
 
-          {error && (
-            <div
-              className={`auth-alert ${
-                error.includes("successfully") ? "success" : ""
-              }`}
-              role="alert"
-            >
-              {error}
-            </div>
-          )}
+          {error && <Alert tone="error" title="We couldn’t complete that request"><p>{error}</p></Alert>}
+          {notice && <Alert tone="success" title="Registration complete"><p>{notice}</p></Alert>}
+          {resetMessage && <Alert tone="success" title="Reset request received"><p>{resetMessage}</p></Alert>}
 
-          <form
-            onSubmit={
-              forgotPassword ? handleForgotPassword : submit
-            }
-            className="auth-form"
-          >
+          <form onSubmit={forgotPassword ? handleForgotPassword : submit} className="standard-form auth-form">
             {forgotPassword ? (
               <>
-                <p className="forgot-password-description">
-                  Enter your registered email address. If an account
-                  exists, we'll send you instructions to reset your
-                  password.
-                </p>
-
-                <label htmlFor="reset-email">Email address</label>
-
-                <input
-                  id="reset-email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
-                  required
-                />
-
-                {resetMessage && (
-                  <div
-                    className="auth-alert success"
-                    role="status"
-                  >
-                    {resetMessage}
-                  </div>
-                )}
-
-                <button
-                  className="auth-submit"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? "Sending..." : "Send reset link"}
-                  <Icon name="chevron" size={18} />
-                </button>
-
-                <button
-                  type="button"
-                  className="forgot-password-back"
-                  onClick={() => {
-                    setForgotPassword(false);
-                    setError("");
-                    setResetMessage("");
-                  }}
-                >
-                  Back to sign in
-                </button>
+                <p className="form-intro">Enter your registered email. If an account exists, password reset instructions will be sent.</p>
+                <Input id="reset-email" label="Email address" type="email" placeholder="name@example.com" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" disabled={loading} required />
+                <Button type="submit" iconAfter="arrowRight" loading={pending === "forgot-password"} loadingLabel="Sending reset link..." disabled={loading} className="button-full">Send reset link</Button>
+                <Button variant="ghost" onClick={backToLogin} disabled={loading} className="button-full">Back to sign in</Button>
               </>
             ) : (
               <>
                 {mode === "register" && (
-                  <>
-                    <label htmlFor="register-name">Full name</label>
-
-                    <input
-                      id="register-name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      autoComplete="name"
-                      required
-                    />
-                  </>
+                  <Input id="register-name" label="Full name" placeholder="Enter your full name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" disabled={loading} required />
                 )}
 
-                <label htmlFor="auth-email">Email address</label>
-
-                <input
-                  id="auth-email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
-                  required
-                />
-
-                <label htmlFor="auth-password">Password</label>
-
-                <input
-                  id="auth-password"
-                  type="password"
-                  placeholder="Enter your password"
-                  minLength={6}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  autoComplete={
-                    mode === "login"
-                      ? "current-password"
-                      : "new-password"
-                  }
-                  required
-                />
+                <Input id="auth-email" label="Email address" type="email" placeholder="name@example.com" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" disabled={loading} required />
+                <PasswordInput id="auth-password" label="Password" placeholder="Enter your password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} disabled={loading} required />
 
                 {mode === "login" && (
-                  <div className="forgot-password-row">
-                    <button
-                      type="button"
-                      className="forgot-password-link"
-                      onClick={() => {
-                        setForgotPassword(true);
-                        setError("");
-                        setResetMessage("");
-                      }}
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
+                  <div className="forgot-password-row"><button type="button" className="text-button" onClick={showForgotPassword} disabled={loading}>Forgot password?</button></div>
                 )}
 
                 {mode === "register" && (
-                  <>
-                    <label>Workspace role</label>
-
+                  <fieldset className="role-fieldset" disabled={loading}>
+                    <legend>Workspace role <span className="required-mark" aria-hidden="true">*</span></legend>
                     <div className="role-options">
-                      {["BUYER", "SELLER", "ADMIN"].map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          className={
-                            role === item ? "selected" : ""
-                          }
-                          onClick={() => setRole(item)}
-                        >
-                          {item}
-                        </button>
+                      {roles.map((item) => (
+                        <label className={`role-option ${role === item.value ? "selected" : ""}`} key={item.value}>
+                          <input type="radio" name="workspace-role" value={item.value} checked={role === item.value} onChange={() => setRole(item.value)} />
+                          <span className="role-option-icon"><Icon name={item.icon} size={18} /></span>
+                          <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                          <span className="radio-mark" aria-hidden="true" />
+                        </label>
                       ))}
                     </div>
-                  </>
+                  </fieldset>
                 )}
 
-                <button
-                  className="auth-submit"
+                <Button
                   type="submit"
+                  iconAfter="arrowRight"
+                  loading={pending === "login" || pending === "register"}
+                  loadingLabel={mode === "login" ? "Signing in..." : "Creating account..."}
                   disabled={loading}
+                  className="button-full"
                 >
-                  {loading
-                    ? "Processing..."
-                    : mode === "login"
-                      ? "Enter workspace"
-                      : "Create account"}
-
-                  <Icon name="chevron" size={18} />
-                </button>
+                  {mode === "login" ? "Sign in" : "Create account"}
+                </Button>
               </>
             )}
           </form>
 
           {!forgotPassword && (
             <div className="auth-mode-switch">
-              {mode === "login"
-                ? "New to RevertPay?"
-                : "Already have an account?"}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(
-                    mode === "login" ? "register" : "login"
-                  );
-                  setError("");
-                  setPassword("");
-                }}
-              >
-                {mode === "login" ? "Create account" : "Sign in"}
+              <span>{mode === "login" ? "New to RevertPay?" : "Already have an account?"}</span>
+              <button type="button" className="text-button" disabled={loading} onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setNotice(""); setPassword(""); }}>
+                {mode === "login" ? "Create an account" : "Sign in"}
               </button>
             </div>
           )}
@@ -420,4 +215,3 @@ function AuthScreen({ onLogin }) {
 }
 
 export default AuthScreen;
-

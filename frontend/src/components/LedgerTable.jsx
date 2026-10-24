@@ -1,59 +1,75 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
 import TransactionDetailsModal from "./TransactionDetailsModal";
-import {
-  formatMoney,
-  formatDate,
-  readResponse,
-} from "../utils/formatters";
+import Button from "./Button";
+import { EmptyState } from "./Feedback";
+import API from "../services/api";
+import { apiRequest } from "../services/request";
+import { formatMoney, formatDate } from "../utils/formatters";
 
 function LedgerTable({ ledger = [], compact = false, token }) {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [transaction, setTransaction] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
+  const detailsRequestRef = useRef({ id: 0, controller: null });
 
-  const data = compact
-    ? ledger.slice(-6).reverse()
-    : [...ledger].reverse();
+  useEffect(() => {
+    return () => {
+      detailsRequestRef.current.id += 1;
+      detailsRequestRef.current.controller?.abort();
+    };
+  }, []);
+
+  const sortedEntries = [...ledger].sort(
+    (first, second) => Number(second.entry_id || 0) - Number(first.entry_id || 0)
+  );
+  const data = compact ? sortedEntries.slice(0, 6) : sortedEntries;
 
   const openTransactionDetails = async (entry) => {
+    const requestId = detailsRequestRef.current.id + 1;
+    detailsRequestRef.current.controller?.abort();
+    const controller = new AbortController();
+    detailsRequestRef.current = { id: requestId, controller };
+
     setSelectedEntry(entry);
     setTransaction(null);
     setDetailsError("");
     setDetailsLoading(true);
 
     try {
-      const response = await fetch(
-        `/api/escrow/${entry.reference_id}/ledger-details`,
+      const result = await apiRequest(
+        API.getEscrowLedgerDetails(entry.reference_id),
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          token,
+          signal: controller.signal,
+          fallbackMessage: "Transaction details could not be loaded.",
         }
       );
 
-      const result = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          result?.message ||
-            result?.error ||
-            "Unable to load transaction details."
-        );
+      if (detailsRequestRef.current.id !== requestId) return;
+      setTransaction(result);
+    } catch (detailsRequestError) {
+      if (
+        detailsRequestError.name === "AbortError" ||
+        detailsRequestRef.current.id !== requestId
+      ) {
+        return;
       }
 
-      setTransaction(result);
-    } catch (err) {
       setDetailsError(
-        err.message || "Unable to load transaction details."
+        detailsRequestError.message || "Transaction details could not be loaded."
       );
     } finally {
-      setDetailsLoading(false);
+      if (detailsRequestRef.current.id === requestId) {
+        setDetailsLoading(false);
+      }
     }
   };
 
   const closeTransactionDetails = () => {
+    detailsRequestRef.current.id += 1;
+    detailsRequestRef.current.controller?.abort();
     setSelectedEntry(null);
     setTransaction(null);
     setDetailsError("");
@@ -62,86 +78,77 @@ function LedgerTable({ ledger = [], compact = false, token }) {
 
   if (!ledger.length) {
     return (
-      <div className="empty-ledger">
-        <div className="empty-ledger-icon">
-          <Icon name="book" size={24} />
-        </div>
-
-        <strong>No ledger activity yet</strong>
-
-        <p>
-          When funds move, immutable debit and credit records will appear here.
-        </p>
-      </div>
+      <EmptyState
+        compact
+        icon="book"
+        title="No ledger activity yet"
+        description="When funds move, permanent debit and credit records will appear here."
+      />
     );
   }
 
   return (
     <>
-      <div className="ledger-list">
-        <div className="ledger-columns">
-          <span>Entry</span>
-          <span>Reference</span>
-          <span>Recorded at</span>
-          <span>Amount</span>
-        </div>
+      <div
+        className="data-table-scroll"
+        tabIndex={0}
+        role="region"
+        aria-label="Ledger entries; scroll horizontally on small screens"
+      >
+        <table className="data-table ledger-table">
+          <caption className="sr-only">Account ledger entries</caption>
+          <thead>
+            <tr>
+              <th scope="col">Entry</th>
+              <th scope="col">Reference</th>
+              <th scope="col">Recorded at</th>
+              <th scope="col" className="numeric-cell">Amount</th>
+              <th scope="col" className="action-cell"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((entry, index) => {
+              const isCredit = entry.type === "CREDIT";
 
-        {data.map((entry) => {
-          const isCredit = entry.type === "CREDIT";
-
-          return (
-            <div className="ledger-entry" key={entry.entry_id}>
-              <div className="ledger-type">
-                <div
-                  className={`entry-direction ${
-                    isCredit ? "in" : "out"
-                  }`}
-                >
-                  {isCredit ? "+" : "−"}
-                </div>
-
-                <div>
-                  <strong>
-                    {isCredit ? "Credit posted" : "Debit posted"}
-                  </strong>
-                  <span>{entry.type} ENTRY</span>
-                </div>
-              </div>
-
-              <div className="reference">
-                <span className="mobile-ledger-label">
-                  Reference
-                </span>
-                {entry.reference_id ?? "—"}
-              </div>
-
-              <div className="date">
-                <span className="mobile-ledger-label">
-                  Recorded
-                </span>
-                {formatDate(entry.createdAt)}
-              </div>
-
-              <div
-                className={`entry-amount ${
-                  isCredit ? "positive" : "negative"
-                }`}
-              >
-                {isCredit ? "+" : "−"} {formatMoney(entry.amount)}
-              </div>
-
-              <div className="ledger-transaction-action">
-                <button
-                  type="button"
-                  className="secondary-button ledger-view-transaction"
-                  onClick={() => openTransactionDetails(entry)}
-                >
-                  View transaction
-                </button>
-              </div>
-            </div>
-          );
-        })}
+              return (
+                <tr key={entry.entry_id ?? `${entry.reference_id}-${index}`}>
+                  <td>
+                    <div className="ledger-entry-cell">
+                      <span className={`entry-direction ${isCredit ? "credit" : "debit"}`}>
+                        <Icon name={isCredit ? "arrowDownLeft" : "arrowUpRight"} size={16} />
+                      </span>
+                      <div>
+                        <strong>{isCredit ? "Credit" : "Debit"}</strong>
+                        <span>Entry #{entry.entry_id ?? "—"}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className="reference-value">{entry.reference_id ?? "—"}</span></td>
+                  <td>
+                    <time className="table-date" dateTime={entry.createdAt || undefined}>
+                      {formatDate(entry.createdAt)}
+                    </time>
+                  </td>
+                  <td className={`numeric-cell money-cell ${isCredit ? "credit-money" : "debit-money"}`}>
+                    <span aria-label={isCredit ? "Credit" : "Debit"}>{isCredit ? "+" : "−"}</span>
+                    {formatMoney(entry.amount)}
+                  </td>
+                  <td className="action-cell">
+                    <Button
+                      variant="ghost"
+                      size="small"
+                      iconAfter="chevron"
+                      onClick={() => openTransactionDetails(entry)}
+                      aria-label={`View transaction for ledger entry ${entry.entry_id ?? entry.reference_id}`}
+                    >
+                      Details
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <TransactionDetailsModal
@@ -151,9 +158,7 @@ function LedgerTable({ ledger = [], compact = false, token }) {
         error={detailsError}
         onClose={closeTransactionDetails}
         onRetry={() => {
-          if (selectedEntry) {
-            openTransactionDetails(selectedEntry);
-          }
+          if (selectedEntry) openTransactionDetails(selectedEntry);
         }}
       />
     </>
