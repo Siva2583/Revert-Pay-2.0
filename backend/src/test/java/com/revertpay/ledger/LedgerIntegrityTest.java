@@ -3,7 +3,6 @@ package com.revertpay.ledger;
 import com.revertpay.account.Account;
 import com.revertpay.account.AccountRepository;
 import com.revertpay.account.OwnerType;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +12,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 class LedgerIntegrityTest {
@@ -32,7 +31,6 @@ class LedgerIntegrityTest {
 
     @Test
     void transferShouldCreateBalancedDebitAndCreditEntries() {
-
         long unique = System.nanoTime();
         long referenceId = Math.abs(unique);
 
@@ -40,7 +38,6 @@ class LedgerIntegrityTest {
                 new TransactionTemplate(transactionManager);
 
         transactions.executeWithoutResult(status -> {
-
             Account source = accountRepository.saveAndFlush(
                     new Account(
                             OwnerType.SYSTEM,
@@ -59,6 +56,14 @@ class LedgerIntegrityTest {
 
             BigDecimal amount = new BigDecimal("100.00");
 
+            // Fund the source account before transferring.
+            ledgerService.doCredit(
+                    source,
+                    new BigDecimal("500.00"),
+                    referenceId + 1
+            );
+
+            // Transfer must debit the source and credit the destination.
             ledgerService.transfer(
                     source,
                     destination,
@@ -76,43 +81,26 @@ class LedgerIntegrityTest {
             assertEquals(
                     2,
                     entries.size(),
-                    "Transfer must create exactly two ledger entries"
+                    "A successful transfer must create exactly two ledger entries"
             );
 
-            List<LedgerEntry> debits = entries.stream()
+            LedgerEntry debit = entries.stream()
                     .filter(entry -> entry.getType() == Type.DEBIT)
-                    .toList();
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new AssertionError("Debit entry was not created"));
 
-            List<LedgerEntry> credits = entries.stream()
+            LedgerEntry credit = entries.stream()
                     .filter(entry -> entry.getType() == Type.CREDIT)
-                    .toList();
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new AssertionError("Credit entry was not created"));
 
-            assertEquals(1, debits.size(), "Exactly one debit is required");
-            assertEquals(1, credits.size(), "Exactly one credit is required");
+            assertEquals(amount, debit.getAmount());
+            assertEquals(amount, credit.getAmount());
 
-            assertEquals(
-                    0,
-                    amount.compareTo(debits.get(0).getAmount()),
-                    "Debit amount must match the transfer amount"
-            );
-
-            assertEquals(
-                    0,
-                    amount.compareTo(credits.get(0).getAmount()),
-                    "Credit amount must match the transfer amount"
-            );
-
-            assertEquals(
-                    source.getId(),
-                    debits.get(0).getAccount().getId(),
-                    "Debit must belong to the source account"
-            );
-
-            assertEquals(
-                    destination.getId(),
-                    credits.get(0).getAccount().getId(),
-                    "Credit must belong to the destination account"
-            );
+            assertEquals(source.getId(), debit.getAccount().getId());
+            assertEquals(destination.getId(), credit.getAccount().getId());
         });
     }
 }

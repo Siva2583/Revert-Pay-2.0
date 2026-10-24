@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -18,7 +19,8 @@ import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
+    private static final org.slf4j.Logger logger =
+            org.slf4j.LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
@@ -37,67 +39,56 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        System.out.println("========== JWT FILTER HIT ==========");
-        System.out.println("REQUEST: " + request.getRequestURI());
-
         String authHeader = request.getHeader("Authorization");
 
-        System.out.println("AUTH HEADER: " + authHeader);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("NO VALID BEARER HEADER");
-            filterChain.doFilter(request, response);
-            return;
-        }
+            try {
+                if (jwtService.isTokenValid(token)) {
+                    Long userId = jwtService.extractUserId(token);
 
-        String token = authHeader.substring(7);
+                    Optional<User> userOptional =
+                            userRepository.findById(userId);
 
-        System.out.println("TOKEN RECEIVED: " + token);
+                    if (userOptional.isPresent()
+                            && SecurityContextHolder.getContext()
+                            .getAuthentication() == null) {
 
-        boolean valid = jwtService.isTokenValid(token);
+                        User actualUser = userOptional.get();
 
-        System.out.println("TOKEN VALID: " + valid);
+                        SimpleGrantedAuthority authority =
+                                new SimpleGrantedAuthority(
+                                        "ROLE_" + actualUser.getRole().name()
+                                );
 
-        if (valid) {
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        actualUser,
+                                        null,
+                                        List.of(authority)
+                                );
 
-            Long userId = jwtService.extractUserId(token);
+                        SecurityContextHolder.getContext()
+                                .setAuthentication(authentication);
+                    }
+                } else {
+                    logger.warn(
+                            "JWT validation failed for request: {}",
+                            request.getRequestURI()
+                    );
+                }
 
-            System.out.println("USER ID FROM TOKEN: " + userId);
+            } catch (RuntimeException exception) {
+                SecurityContextHolder.clearContext();
 
-            Optional<User> user = userRepository.findById(userId);
-
-            System.out.println("USER FOUND: " + user.isPresent());
-
-            if (user.isPresent()) {
-
-                User actualUser = user.get();
-
-                System.out.println("AUTHENTICATING USER: "
-                        + actualUser.getEmail());
-
-                System.out.println("ROLE: "
-                        + actualUser.getRole());
-
-                SimpleGrantedAuthority authority =
-                        new SimpleGrantedAuthority(
-                                "ROLE_" + actualUser.getRole().name()
-                        );
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                actualUser,
-                                null,
-                                List.of(authority)
-                        );
-
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
-
-                System.out.println("AUTHENTICATION SUCCESSFULLY SET!");
+                logger.error(
+                        "JWT authentication failed for request: {}",
+                        request.getRequestURI(),
+                        exception
+                );
             }
         }
-
-        System.out.println("====================================");
 
         filterChain.doFilter(request, response);
     }

@@ -1,5 +1,5 @@
 package com.revertpay.escrow;
-
+import com.revertpay.ledger.LedgerService;
 import com.revertpay.account.Account;
 import com.revertpay.account.AccountRepository;
 import com.revertpay.account.OwnerType;
@@ -37,6 +37,8 @@ class EscrowAutoReleaseTest {
     private UserRepository userRepository;
 
     @Autowired
+    private LedgerService ledgerService;
+    @Autowired
     private LedgerEntryRepository ledgerEntryRepository;
 
     @Autowired
@@ -64,6 +66,17 @@ class EscrowAutoReleaseTest {
                     "Auto Seller " + unique,
                     "autoseller" + unique + "@example.com",
                     "test-password"
+            );
+            Account holding = getOrCreateEscrowHoldingAccount();
+            BigDecimal currentBalance = ledgerService.getBalance(holding.getId());
+            BigDecimal requiredCredit = currentBalance.signum() < 0
+                    ? currentBalance.abs().add(new BigDecimal("100.00"))
+                    : new BigDecimal("100.00");
+
+            ledgerService.doCredit(
+                    holding,
+                    requiredCredit,
+                    System.nanoTime()
             );
             seller.setRole(Role.SELLER);
             seller = userRepository.saveAndFlush(seller);
@@ -97,6 +110,7 @@ class EscrowAutoReleaseTest {
             escrow.setRequestHash("auto-release-test-" + unique);
 
             escrow = escrowRepository.saveAndFlush(escrow);
+
 
             return new TestData(escrow.getId());
         });
@@ -222,7 +236,18 @@ class EscrowAutoReleaseTest {
                             "ACC" + seller.getId()
                     )
             );
+            Account holding = getOrCreateEscrowHoldingAccount();
 
+            BigDecimal currentBalance = ledgerService.getBalance(holding.getId());
+            BigDecimal requiredCredit = currentBalance.signum() < 0
+                    ? currentBalance.abs().add(new BigDecimal("100.00"))
+                    : new BigDecimal("100.00");
+
+            ledgerService.doCredit(
+                    holding,
+                    requiredCredit,
+                    System.nanoTime()
+            );
             EscrowTransaction escrow = new EscrowTransaction();
             escrow.setBuyer(buyer);
             escrow.setSeller(seller);
@@ -334,6 +359,15 @@ class EscrowAutoReleaseTest {
                 "Escrow without a deadline must remain SHIPPED"
         );
     }
-
+    private Account getOrCreateEscrowHoldingAccount() {
+        return accountRepository.findByAccountNumber("ESCROW_HOLDING")
+                .orElseGet(() -> accountRepository.saveAndFlush(
+                        new Account(
+                                OwnerType.SYSTEM,
+                                0L,
+                                "ESCROW_HOLDING"
+                        )
+                ));
+    }
     private record TestData(Long escrowId) {}
 }

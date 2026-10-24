@@ -13,10 +13,14 @@ import java.util.Date;
 
 @Service
 public class JwtService {
+
     @Value("${jwt.secret}")
     private String secret;
-    public SecretKey getSecretKey(){
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+
+    public SecretKey getSecretKey() {
+        return Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     public String generateToken(User user) {
@@ -26,41 +30,38 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole().name())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60))
+                .expiration(
+                        new Date(System.currentTimeMillis() + 1000L * 60 * 60)
+                )
                 .signWith(getSecretKey())
                 .compact();
     }
-    public Claims extractClaims(String token){
-        Claims claim=Jwts.parser()
+
+    public Claims extractClaims(String token) {
+
+        return Jwts.parser()
                 .verifyWith(getSecretKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return claim;
-
-
     }
-    public Long extractUserId(String token){
-        Claims claim=extractClaims(token);
-        return Long.parseLong(claim.getSubject());
+
+    public Long extractUserId(String token) {
+        Claims claims = extractClaims(token);
+        return Long.parseLong(claims.getSubject());
     }
+
     public boolean isTokenValid(String token) {
+
         try {
+            Claims claims = extractClaims(token);
 
-            Claims claim = extractClaims(token);
+            Date expiration = claims.getExpiration();
 
-            System.out.println("JWT SUBJECT: " + claim.getSubject());
-            System.out.println("JWT EXPIRATION: " + claim.getExpiration());
-            System.out.println("CURRENT TIME: " + new Date());
+            return expiration != null
+                    && expiration.after(new Date());
 
-            return claim.getExpiration().after(new Date());
-
-        } catch (Exception e) {
-
-            System.out.println("========== JWT ERROR ==========");
-            e.printStackTrace();
-            System.out.println("===============================");
-
+        } catch (RuntimeException exception) {
             return false;
         }
     }

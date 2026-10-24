@@ -31,10 +31,10 @@ public class EscrowScheduler {
             try {
                 escrowService.autoReleaseEscrow(transaction.getId());
             } catch (Exception e) {
-                System.err.println(
-                        "Auto-release failed for escrow " +
-                                transaction.getId() + ": " + e.getMessage()
-                );
+//                System.err.println(
+//                        "Auto-release failed for escrow " +
+//                                transaction.getId() + ": " + e.getMessage()
+//                );
             }
         }
     }
@@ -45,7 +45,14 @@ public class EscrowScheduler {
                 escrowRepository.findByStatus(EscrowStatus.PAYMENT_INITIATED);
 
         for (EscrowTransaction transaction : transactions) {
-            escrowService.checkExpiry(transaction.getId());
+            try {
+                escrowService.checkExpiry(transaction.getId());
+            } catch (Exception e) {
+//                System.err.println(
+//                        "Expiry check failed for escrow "
+//                                + transaction.getId() + ": " + e.getMessage()
+//                );
+            }
         }
     }
 }

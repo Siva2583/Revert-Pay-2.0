@@ -1,22 +1,36 @@
+
 import { useEffect, useState } from "react";
 import "./App.css";
+
 import AuthScreen from "./components/AuthScreen";
+import ResetPassword from "./components/ResetPassword";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Overview from "./components/Overview";
 import AccountLookup from "./components/AccountLookup";
 import CreateAccount from "./components/CreateAccount";
-import Transfer from "./components/Transfer";
 import EscrowInitiate from "./components/EscrowInitiate";
 import MyAccount from "./components/MyAccount";
 import Toast from "./components/Toast";
 import SellerEscrows from "./components/SellerEscrows";
 import BuyerEscrows from "./components/BuyerEscrows";
 import AdminEscrows from "./components/AdminEscrows";
+import AdminLedger from "./components/AdminLedger";
+
 function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(
+    localStorage.getItem("token")
+  );
   const [page, setPage] = useState("overview");
   const [toast, setToast] = useState(null);
+
+  // Detect password-reset links before checking login status.
+  const isResetPasswordPage =
+    window.location.pathname === "/reset-password";
+
+  const resetToken = new URLSearchParams(
+    window.location.search
+  ).get("token");
 
   useEffect(() => {
     if (!toast) return;
@@ -38,6 +52,19 @@ function App() {
     setPage("overview");
   };
 
+  // A reset link must work even when the user is already logged in.
+  if (isResetPasswordPage) {
+    return (
+      <ResetPassword
+        token={resetToken}
+        onBackToLogin={() => {
+          localStorage.removeItem("token");
+          window.location.replace("/");
+        }}
+      />
+    );
+  }
+
   if (!token) {
     return <AuthScreen onLogin={login} />;
   }
@@ -52,7 +79,9 @@ function App() {
       />
 
       <main className="main-workspace">
-        <Header page={page} />
+        {page !== "admin-ledger" && (
+          <Header page={page} />
+        )}
 
         <div className="workspace-content">
           {page === "overview" && (
@@ -68,13 +97,6 @@ function App() {
 
           {page === "create" && (
             <CreateAccount
-              token={token}
-              setToast={setToast}
-            />
-          )}
-
-          {page === "transfer" && (
-            <Transfer
               token={token}
               setToast={setToast}
             />
@@ -100,12 +122,17 @@ function App() {
               setToast={setToast}
             />
           )}
-      {page === "admin-escrows" && (
-        <AdminEscrows
-          token={token}
-          setToast={setToast}
-        />
-      )}
+
+          {page === "admin-escrows" && (
+            <AdminEscrows
+              token={token}
+              setToast={setToast}
+            />
+          )}
+
+          {page === "admin-ledger" && (
+            <AdminLedger token={token} />
+          )}
 
           {page === "my-account" && (
             <MyAccount token={token} />
@@ -122,3 +149,4 @@ function App() {
 }
 
 export default App;
+

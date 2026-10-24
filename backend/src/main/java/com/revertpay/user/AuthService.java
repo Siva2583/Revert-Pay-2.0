@@ -42,17 +42,21 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        System.out.println("USER SAVED: " + savedUser.getId());
+        //System.out.println("USER SAVED: " + savedUser.getId());
 
-        Account createdAccount = accountService.createAccount(
-                OwnerType.USER,
-                savedUser.getId(),
-                "ACC" + savedUser.getId()
-        );
+        if (request.getRole() == Role.BUYER
+                || request.getRole() == Role.SELLER) {
 
-        System.out.println(
-                "ACCOUNT CREATED: " + createdAccount.getAccountNumber()
-        );
+            accountService.createAccount(
+                    OwnerType.USER,
+                    savedUser.getId(),
+                    "ACC" + savedUser.getId()
+            );
+        }
+
+//        System.out.println(
+//                "ACCOUNT CREATED: " + createdAccount.getAccountNumber()
+//        );
     }
 
     public String verify(LoginRequest loginRequest) {

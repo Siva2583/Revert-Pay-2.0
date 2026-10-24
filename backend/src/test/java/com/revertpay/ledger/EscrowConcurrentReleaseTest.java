@@ -7,19 +7,20 @@ import com.revertpay.escrow.EscrowRepository;
 import com.revertpay.escrow.EscrowService;
 import com.revertpay.escrow.EscrowStatus;
 import com.revertpay.escrow.EscrowTransaction;
+import com.revertpay.security.JwtService;
 import com.revertpay.user.Role;
 import com.revertpay.user.User;
 import com.revertpay.user.UserRepository;
-import com.revertpay.security.JwtService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -47,17 +48,20 @@ class EscrowConcurrentReleaseTest {
     private LedgerEntryRepository ledgerEntryRepository;
 
     @Autowired
+    private LedgerService ledgerService;
+
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Test
     void concurrentReleaseShouldNotDuplicateLedgerEntries() throws Exception {
 
         long unique = System.nanoTime();
+        long referenceId = Math.abs(unique);
 
         TransactionTemplate transactions =
                 new TransactionTemplate(transactionManager);
 
-        // Arrange: create buyer, seller, accounts, and escrow.
         TestData data = transactions.execute(status -> {
 
             User buyer = new User(
@@ -76,25 +80,48 @@ class EscrowConcurrentReleaseTest {
             seller.setRole(Role.SELLER);
             seller = userRepository.saveAndFlush(seller);
 
-            Account sellerAccount = accountRepository.saveAndFlush(
+            accountRepository.saveAndFlush(
                     new Account(
                             OwnerType.USER,
                             seller.getId(),
                             "ACC" + seller.getId()
                     )
             );
+            BigDecimal transferAmount = new BigDecimal("100.00");
 
-            Account escrowAccount = accountRepository
+            Account buyerAccount = accountRepository.saveAndFlush(
+                    new Account(
+                            OwnerType.USER,
+                            buyer.getId(),
+                            "ACC" + buyer.getId()
+                    )
+            );
+
+            ledgerService.doCredit(
+                    buyerAccount,
+                    transferAmount,
+                    referenceId + 1
+            );
+
+            Account holding = accountRepository
                     .findByAccountNumber("ESCROW_HOLDING")
                     .orElseThrow(() -> new IllegalStateException(
                             "ESCROW_HOLDING account must already exist"
                     ));
 
+            ledgerService.transfer(
+                    buyerAccount,
+                    holding,
+                    transferAmount,
+                    referenceId + 2
+            );
+
+
             EscrowTransaction escrow = new EscrowTransaction();
             escrow.setBuyer(buyer);
             escrow.setSeller(seller);
             escrow.setItemName("Concurrent release test");
-            escrow.setAmount(new BigDecimal("100.00"));
+            escrow.setAmount(transferAmount);
             escrow.setStatus(EscrowStatus.SHIPPED);
             escrow.setCreatedAt(LocalDateTime.now());
             escrow.setShippedAt(LocalDateTime.now());
@@ -105,24 +132,18 @@ class EscrowConcurrentReleaseTest {
 
             return new TestData(
                     buyer.getId(),
-                    seller.getId(),
                     escrow.getId()
             );
         });
 
         assertNotNull(data);
 
-        String buyerToken = jwtService.generateToken(
-                userRepository.findById(data.buyerId()).orElseThrow()
-        );
+        User buyer = userRepository.findById(data.buyerId())
+                .orElseThrow();
 
-        long entriesBefore = ledgerEntryRepository.count();
+        String buyerToken = jwtService.generateToken(buyer);
 
-//        ExecutorService executor = Executors.newFixedThreadPool(2);
-//        CountDownLatch ready = new CountDownLatch(2);
-//        CountDownLatch start = new CountDownLatch(1);
         int requestCount = 50;
-
         ExecutorService executor =
                 Executors.newFixedThreadPool(requestCount);
 
@@ -137,7 +158,10 @@ class EscrowConcurrentReleaseTest {
             }
 
             try {
-                escrowService.confirmEscrow(data.escrowId(), buyerToken);
+                escrowService.confirmEscrow(
+                        data.escrowId(),
+                        buyerToken
+                );
                 return true;
             } catch (RuntimeException ex) {
                 return false;
@@ -145,7 +169,7 @@ class EscrowConcurrentReleaseTest {
         };
 
         try {
-            List<Future<Boolean>> futures = new java.util.ArrayList<>();
+            List<Future<Boolean>> futures = new ArrayList<>();
 
             for (int i = 0; i < requestCount; i++) {
                 futures.add(executor.submit(release));
@@ -153,7 +177,7 @@ class EscrowConcurrentReleaseTest {
 
             assertTrue(
                     ready.await(10, TimeUnit.SECONDS),
-                    "All 50 release attempts should be ready"
+                    "All release attempts should be ready"
             );
 
             start.countDown();
@@ -169,7 +193,7 @@ class EscrowConcurrentReleaseTest {
             assertEquals(
                     1,
                     successes,
-                    "Exactly one of the 50 release attempts should succeed"
+                    "Exactly one release attempt should succeed"
             );
 
         } finally {
@@ -182,22 +206,17 @@ class EscrowConcurrentReleaseTest {
             );
         }
 
-        // Verify final persisted state.
         EscrowTransaction finalEscrow =
-                escrowRepository.findById(data.escrowId()).orElseThrow();
+                escrowRepository.findById(data.escrowId())
+                        .orElseThrow();
 
         assertEquals(EscrowStatus.RELEASED, finalEscrow.getStatus());
 
         List<LedgerEntry> entries = ledgerEntryRepository.findAll()
                 .stream()
-                .filter(entry -> entry.getReference_id() == data.escrowId())
+                .filter(entry ->
+                        entry.getReference_id() == data.escrowId())
                 .toList();
-
-//        assertEquals(
-//                2,
-//                entries.size(),
-//                "Exactly one debit and one credit should be recorded for this escrow"
-//        );
 
         assertEquals(
                 2,
@@ -205,12 +224,24 @@ class EscrowConcurrentReleaseTest {
                 "Exactly one debit and one credit should be recorded"
         );
 
+        assertEquals(
+                1,
+                entries.stream()
+                        .filter(entry -> entry.getType() == Type.DEBIT)
+                        .count()
+        );
 
+        assertEquals(
+                1,
+                entries.stream()
+                        .filter(entry -> entry.getType() == Type.CREDIT)
+                        .count()
+        );
     }
 
     private record TestData(
             Long buyerId,
-            Long sellerId,
             Long escrowId
     ) {}
 }
+

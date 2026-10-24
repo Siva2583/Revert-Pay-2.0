@@ -1,5 +1,6 @@
 package com.revertpay.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +24,7 @@ public class User {
     private String email;
     @Column(nullable = false)
     @NonNull
+    @JsonIgnore
     private String password;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

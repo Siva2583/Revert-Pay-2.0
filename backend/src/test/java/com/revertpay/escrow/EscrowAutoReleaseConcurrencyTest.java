@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.*;
-
+import com.revertpay.ledger.LedgerService;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -46,6 +46,8 @@ class EscrowAutoReleaseConcurrencyTest {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private LedgerService ledgerService;
 
     @Test
     void buyerConfirmationAndAutoReleaseShouldNotDuplicatePayment()
@@ -89,12 +91,16 @@ class EscrowAutoReleaseConcurrencyTest {
                             "ACC" + seller.getId()
                     )
             );
-
-            // Ensure the system escrow account exists.
-            accountRepository.findByAccountNumber("ESCROW_HOLDING")
+            Account holding = accountRepository
+                    .findByAccountNumber("ESCROW_HOLDING")
                     .orElseThrow(() -> new IllegalStateException(
                             "ESCROW_HOLDING account must already exist"
                     ));
+            ledgerService.doCredit(
+                    holding,
+                    new BigDecimal("100.00"),
+                    System.nanoTime()
+            );
 
             EscrowTransaction escrow = new EscrowTransaction();
             escrow.setBuyer(buyer);
@@ -104,8 +110,6 @@ class EscrowAutoReleaseConcurrencyTest {
             escrow.setStatus(EscrowStatus.SHIPPED);
             escrow.setCreatedAt(LocalDateTime.now().minusMinutes(10));
             escrow.setShippedAt(LocalDateTime.now().minusMinutes(10));
-
-            // Make automatic release eligible immediately.
             escrow.setAutoReleaseAt(LocalDateTime.now().minusMinutes(5));
 
             escrow.setIdempotencyKey("release-race-" + unique);
@@ -158,8 +162,9 @@ class EscrowAutoReleaseConcurrencyTest {
                 escrowService.autoReleaseEscrow(escrowId);
                 return true;
             } catch (RuntimeException ex) {
-                return false;
-            }
+            ex.printStackTrace();
+            return false;
+        }
         };
 
         try {
@@ -176,10 +181,10 @@ class EscrowAutoReleaseConcurrencyTest {
 
             start.countDown();
 
-            // The automatic-release method may return normally if it
-            // discovers that the buyer already released the escrow.
             buyerFuture.get(30, TimeUnit.SECONDS);
             automaticFuture.get(30, TimeUnit.SECONDS);
+            System.out.println("Buyer confirmation result: " + buyerFuture.get());
+            System.out.println("Automatic release result: " + automaticFuture.get());
 
         } finally {
             start.countDown();

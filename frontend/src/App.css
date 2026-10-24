@@ -2170,3 +2170,646 @@ input:focus {
     margin-left: 0;
   }
 }
+/* ============================
+SYSTEM LEDGER
+============================ */
+
+.admin-ledger-page {
+width: 100%;
+min-width: 0;
+color: var(--text-primary, #111827);
+}
+
+.admin-ledger-page .page-heading {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 24px;
+margin-bottom: 28px;
+}
+
+.admin-ledger-page .page-heading h1 {
+margin: 8px 0;
+font-size: clamp(26px, 3vw, 34px);
+letter-spacing: -1.2px;
+}
+
+.admin-ledger-page .page-heading p {
+margin: 0;
+color: var(--text-muted, #718096);
+line-height: 1.6;
+}
+
+.admin-ledger-page .eyebrow {
+color: var(--text-muted, #718096);
+font-size: 12px;
+letter-spacing: 1.4px;
+}
+
+.admin-ledger-page .secondary-button,
+.loaded-account .secondary-button {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+gap: 9px;
+min-height: 44px;
+padding: 0 18px;
+border: 1px solid var(--border-color, #deded8);
+border-radius: 12px;
+background: var(--card-background, #fff);
+color: inherit;
+font: inherit;
+cursor: pointer;
+transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.admin-ledger-page .secondary-button:hover:not(:disabled),
+.loaded-account .secondary-button:hover:not(:disabled) {
+border-color: #b8f34a;
+transform: translateY(-1px);
+}
+.admin-ledger-page .secondary-button:disabled,
+.loaded-account .secondary-button:disabled {
+cursor: not-allowed;
+opacity: 0.65;
+}
+.forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  margin-bottom: 8px;
+}
+
+.forgot-password-link,
+.forgot-password-back {
+  border: none;
+  background: transparent;
+  color: var(--accent, #7c8cff);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.forgot-password-link:hover,
+.forgot-password-back:hover {
+  text-decoration: underline;
+}
+
+.forgot-password-description {
+  margin: 0 0 8px;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.forgot-password-back {
+  align-self: center;
+  margin-top: 12px;
+}
+
+.ledger-summary {
+display: grid;
+grid-template-columns: repeat(4, minmax(0, 1fr));
+gap: 16px;
+margin-bottom: 24px;
+}
+
+.ledger-stat {
+min-width: 0;
+padding: 24px;
+border: 1px solid var(--border-color, #e2e2dc);
+border-radius: 16px;
+background: var(--card-background, #fff);
+}
+
+.ledger-stat-label {
+display: block;
+margin-bottom: 12px;
+color: var(--text-muted, #718096);
+font-size: 12px;
+font-weight: 600;
+letter-spacing: 1px;
+}
+
+.ledger-stat h2 {
+margin: 0;
+overflow-wrap: anywhere;
+font-size: clamp(21px, 2vw, 30px);
+font-weight: 650;
+letter-spacing: -0.7px;
+}
+
+.ledger-stat p {
+margin: 10px 0 0;
+color: var(--text-muted, #718096);
+font-size: 13px;
+line-height: 1.5;
+}
+
+.ledger-table-card {
+overflow: hidden;
+border: 1px solid var(--border-color, #e2e2dc);
+border-radius: 16px;
+background: var(--card-background, #fff);
+}
+
+.ledger-table-heading {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 16px;
+padding: 24px;
+border-bottom: 1px solid var(--border-color, #e7e7e1);
+}
+
+.ledger-table-heading h2 {
+margin: 0;
+font-size: 20px;
+letter-spacing: -0.4px;
+}
+
+.ledger-table-heading p {
+margin: 7px 0 0;
+color: var(--text-muted, #718096);
+font-size: 13px;
+}
+
+.ledger-table-wrapper {
+width: 100%;
+overflow-x: auto;
+}
+
+.ledger-table {
+width: 100%;
+border-collapse: collapse;
+text-align: left;
+white-space: nowrap;
+}
+
+.ledger-table th,
+.ledger-table td {
+padding: 16px 24px;
+border-bottom: 1px solid var(--border-color, #ededE8);
+}
+
+.ledger-table th {
+background: var(--table-header-background, #f8f8f5);
+color: var(--text-muted, #718096);
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.8px;
+text-transform: uppercase;
+}
+
+.ledger-table td {
+font-size: 14px;
+}
+
+.ledger-table tbody tr:last-child td {
+border-bottom: none;
+}
+
+.ledger-table tbody tr:hover {
+background: var(--table-hover-background, #fafbf6);
+}
+
+.ledger-entry-id {
+color: var(--text-muted, #718096);
+font-variant-numeric: tabular-nums;
+}
+
+.ledger-amount {
+font-weight: 600;
+font-variant-numeric: tabular-nums;
+}
+
+.ledger-type {
+display: inline-flex;
+align-items: center;
+padding: 5px 9px;
+border-radius: 7px;
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.4px;
+}
+
+.ledger-type-credit {
+background: #eaf8d8;
+color: #426d0b;
+}
+
+.ledger-type-debit {
+background: #fff0e9;
+color: #a34a25;
+}
+
+.ledger-state,
+.ledger-error {
+padding: 28px;
+border: 1px solid var(--border-color, #e2e2dc);
+border-radius: 14px;
+background: var(--card-background, #fff);
+color: var(--text-muted, #718096);
+line-height: 1.6;
+}
+
+.ledger-error {
+margin-bottom: 20px;
+border-color: #f1c6bb;
+color: #923d2b;
+}
+
+.ledger-error p {
+margin: 8px 0 16px;
+}
+
+@media (max-width: 1100px) {
+.ledger-summary {
+grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+}
+
+@media (max-width: 640px) {
+.admin-ledger-page .page-heading {
+align-items: flex-start;
+flex-direction: column;
+}
+
+.ledger-summary {
+grid-template-columns: 1fr;
+}
+
+.ledger-stat {
+padding: 20px;
+}
+
+.ledger-table-heading {
+padding: 20px;
+}
+
+.ledger-table th,
+.ledger-table td {
+padding: 14px 16px;
+}
+}
+/* =========================================
+REVERTPAY — TRANSACTION DETAILS MODAL
+========================================= */
+
+.transaction-details-backdrop {
+position: fixed;
+inset: 0;
+z-index: 1000;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 28px;
+background: rgba(13, 17, 25, 0.68);
+backdrop-filter: blur(7px);
+-webkit-backdrop-filter: blur(7px);
+animation: transactionBackdropIn 180ms ease-out;
+}
+
+.transaction-details-panel {
+position: relative;
+width: min(100%, 1000px);
+max-height: min(88vh, 900px);
+overflow-y: auto;
+overscroll-behavior: contain;
+border: 1px solid rgba(255, 255, 255, 0.7);
+border-radius: 22px;
+background: var(--canvas, #f5f5f0);
+color: var(--ink, #10131b);
+box-shadow: 0 30px 100px rgba(0, 0, 0, 0.32);
+animation: transactionPanelIn 220ms ease-out;
+}
+
+.transaction-details-panel::-webkit-scrollbar {
+width: 8px;
+}
+
+.transaction-details-panel::-webkit-scrollbar-thumb {
+border: 2px solid var(--canvas, #f5f5f0);
+border-radius: 20px;
+background: #c6c9be;
+}
+
+.transaction-details-header {
+position: sticky;
+top: 0;
+z-index: 5;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 20px;
+padding: 25px 30px;
+border-bottom: 1px solid var(--line, #dfe1d8);
+background: rgba(255, 255, 255, 0.96);
+backdrop-filter: blur(12px);
+}
+
+.transaction-details-header .eyebrow {
+display: block;
+margin-bottom: 7px;
+color: var(--muted, #72786c);
+font-family: var(--mono, monospace);
+font-size: 11px;
+letter-spacing: 1.2px;
+}
+
+.transaction-details-header h2 {
+margin: 0;
+font-size: clamp(20px, 3vw, 27px);
+line-height: 1.25;
+letter-spacing: -0.8px;
+}
+
+.transaction-details-header .secondary-button {
+flex-shrink: 0;
+min-height: 40px;
+border-radius: 10px;
+}
+
+.transaction-details-content {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+align-items: start;
+gap: 16px;
+padding: 24px 30px 30px;
+}
+
+.transaction-detail-card {
+min-width: 0;
+padding: 22px;
+overflow: hidden;
+border: 1px solid var(--line, #dfe1d8);
+border-radius: 15px;
+background: var(--paper, #fff);
+box-shadow: 0 3px 12px rgba(16, 19, 27, 0.025);
+}
+
+.transaction-detail-card > h3 {
+display: flex;
+align-items: center;
+gap: 9px;
+margin: 0 0 19px;
+font-size: 15px;
+font-weight: 800;
+letter-spacing: -0.25px;
+}
+
+.transaction-detail-card > p {
+margin: 9px 0 0;
+color: var(--deep-muted, #4f564a);
+font-size: 12px;
+line-height: 1.65;
+overflow-wrap: anywhere;
+}
+
+.transaction-detail-card > p:first-of-type {
+color: var(--ink, #10131b);
+font-weight: 600;
+}
+
+.transaction-detail-grid {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 0;
+margin: 0;
+}
+
+.transaction-detail-grid > div {
+min-width: 0;
+padding: 13px 10px 13px 0;
+border-top: 1px solid #eceee7;
+}
+
+.transaction-detail-grid dt {
+margin-bottom: 6px;
+color: var(--muted, #72786c);
+font-size: 10px;
+font-weight: 700;
+letter-spacing: 0.5px;
+text-transform: uppercase;
+}
+
+.transaction-detail-grid dd {
+margin: 0;
+color: var(--ink, #10131b);
+font-size: 12px;
+font-weight: 700;
+line-height: 1.55;
+overflow-wrap: anywhere;
+}
+
+.transaction-detail-card:first-child,
+.transaction-detail-card:nth-child(4),
+.transaction-detail-card:nth-child(5),
+.transaction-detail-card:nth-child(6) {
+grid-column: 1 / -1;
+}
+
+.transaction-detail-card .ledger-table-wrapper {
+max-width: 100%;
+border: 1px solid var(--line, #dfe1d8);
+border-radius: 10px;
+}
+
+.transaction-detail-card .ledger-table {
+min-width: 680px;
+}
+
+.transaction-detail-card .ledger-table th,
+.transaction-detail-card .ledger-table td {
+padding: 12px 14px;
+}
+
+.transaction-detail-card .ledger-table th {
+font-size: 10px;
+}
+
+.transaction-detail-card .ledger-table td {
+font-size: 12px;
+}
+
+.transaction-timeline {
+position: relative;
+display: grid;
+gap: 0;
+margin: 0;
+padding: 0 0 0 10px;
+list-style: none;
+}
+
+.transaction-timeline li {
+position: relative;
+margin-left: 5px;
+padding: 0 0 23px 25px;
+border-left: 2px solid #e5e9d9;
+}
+
+.transaction-timeline li:last-child {
+padding-bottom: 0;
+border-left-color: transparent;
+}
+
+.transaction-timeline li::before {
+position: absolute;
+top: 1px;
+left: -7px;
+width: 10px;
+height: 10px;
+border: 2px solid var(--paper, #fff);
+border-radius: 50%;
+background: var(--lime-dark, #9dcc27);
+box-shadow: 0 0 0 2px #e5efcc;
+content: "";
+}
+
+.transaction-timeline li strong {
+display: block;
+color: var(--ink, #10131b);
+font-size: 12px;
+line-height: 1.6;
+overflow-wrap: anywhere;
+}
+
+.transaction-timeline li p {
+margin: 5px 0 0;
+color: var(--muted, #72786c);
+font-size: 11px;
+line-height: 1.6;
+overflow-wrap: anywhere;
+}
+
+.transaction-timeline li time {
+display: block;
+margin-top: 8px;
+color: var(--deep-muted, #4f564a);
+font-family: var(--mono, monospace);
+font-size: 10px;
+}
+
+.transaction-details-panel .ledger-state,
+.transaction-details-panel .ledger-error {
+margin: 24px 30px;
+}
+
+@keyframes transactionBackdropIn {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+
+@keyframes transactionPanelIn {
+from {
+opacity: 0;
+transform: translateY(12px) scale(0.99);
+}
+to {
+opacity: 1;
+transform: translateY(0) scale(1);
+}
+}
+
+@media (max-width: 700px) {
+.transaction-details-backdrop {
+align-items: flex-end;
+padding: 0;
+}
+
+.transaction-details-panel {
+width: 100%;
+max-height: 94vh;
+border-radius: 20px 20px 0 0;
+}
+
+.transaction-details-header {
+padding: 20px;
+}
+
+.transaction-details-content {
+grid-template-columns: minmax(0, 1fr);
+gap: 12px;
+padding: 16px;
+}
+
+.transaction-detail-card,
+.transaction-detail-card:first-child,
+.transaction-detail-card:nth-child(4),
+.transaction-detail-card:nth-child(5),
+.transaction-detail-card:nth-child(6) {
+grid-column: 1;
+}
+
+.transaction-detail-card {
+padding: 18px;
+}
+
+.transaction-detail-grid {
+grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.transaction-details-panel .ledger-state,
+.transaction-details-panel .ledger-error {
+margin: 16px;
+}
+}
+
+@media (prefers-reduced-motion: reduce) {
+.transaction-details-backdrop,
+.transaction-details-panel {
+animation: none;
+}
+}
+.reset-password-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--app-bg, #f5f5ef);
+}
+
+.reset-password-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 36px;
+  border: 1px solid var(--border, #deded5);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  box-shadow: 0 18px 60px rgb(0 0 0 / 6%);
+}
+
+.reset-password-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 36px;
+  font-size: 1.1rem;
+}
+
+.reset-password-card h1 {
+  margin: 12px 0;
+  font-size: clamp(1.8rem, 5vw, 2.3rem);
+  line-height: 1.15;
+}
+
+.reset-password-description {
+  margin-bottom: 24px;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+.reset-password-card .auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reset-password-card .auth-submit {
+  margin-top: 12px;
+}
+
+.reset-password-card .forgot-password-back {
+  margin-top: 18px;
+}
+

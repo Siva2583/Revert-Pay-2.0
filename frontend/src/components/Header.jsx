@@ -1,71 +1,74 @@
 import React from "react";
 
 function Header({ page }) {
-  const titles = {
-    overview: [
-      "Overview",
-      "Monitor account balances and ledger activity."
-    ],
+const titles = {
+overview: [
+"Overview",
+"Monitor account balances and ledger activity."
+],
 
-    accounts: [
-      "Account lookup",
-      "Inspect a ledger account and its immutable entries."
-    ],
+accounts: [
+  "Account lookup",
+  "Inspect a ledger account and its immutable entries."
+],
 
-    create: [
-      "Create account",
-      "Provision a new account in the ledger workspace."
-    ],
+create: [
+  "Create account",
+  "Provision a new account in the ledger workspace."
+],
 
-    transfer: [
-      "Ledger transfer",
-      "Move funds through a balanced double-entry record."
-    ],
+transfer: [
+  "Ledger transfer",
+  "Move funds through a balanced double-entry record."
+],
 
-    escrow: [
-      "Initiate payment",
-      "Review seller, item, and amount before confirmation."
-    ],
+escrow: [
+  "Initiate payment",
+  "Review seller, item, and amount before confirmation."
+],
 
-    "seller-escrows": [
-      "Seller Escrows",
-      "Review orders, shipments, and escrow activity."
-    ],
+"seller-escrows": [
+  "Seller Escrows",
+  "Review orders, shipments, and escrow activity."
+],
 
-    "buyer-escrows": [
-      "My Escrows",
-      "Track your purchases, delivery, and escrow status."
-    ],
+"buyer-escrows": [
+  "My Escrows",
+  "Track your purchases, delivery, and escrow status."
+],
 
-    "admin-escrows": [
-      "Admin Disputes",
-      "Review and resolve marketplace disputes."
-    ],
+"admin-escrows": [
+  "Admin Disputes",
+  "Review and resolve marketplace disputes."
+],
 
-    "my-account": [
-      "My Account",
-      "View your RevertPay identity, account, balance, and ledger activity."
-    ],
-  };
+"my-account": [
+  "My Account",
+  "View your RevertPay identity, account, balance, and ledger activity."
+],
 
-  return (
-    <header className="topbar">
-      <div>
-        <p className="breadcrumb">
-          REVERTPAY / {page.toUpperCase()}
-        </p>
 
-        <h1>{titles[page][0]}</h1>
+};
 
-        <span>{titles[page][1]}</span>
-      </div>
+const [title, description] = titles[page] || titles.overview;
 
-      <div className="topbar-status">
-        <span className="pulse-dot" />
-        Secure session
-      </div>
-    </header>
-  );
+return ( <header className="topbar"> <div> <p className="breadcrumb">
+REVERTPAY / {(page || "overview").toUpperCase()} </p>
+
+
+    <h1>{title}</h1>
+
+    <span>{description}</span>
+  </div>
+
+  <div className="topbar-status">
+    <span className="pulse-dot" />
+    Secure session
+  </div>
+</header>
+
+
+);
 }
 
 export default Header;

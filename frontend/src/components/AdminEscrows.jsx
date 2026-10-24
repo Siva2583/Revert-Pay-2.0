@@ -11,7 +11,12 @@ const AdminEscrows = ({ token, setToast }) => {
   const [disputes, setDisputes] = useState({});
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState(null);
+  // -----------------------------------------
+  // LOAD DISPUTES
+  // -----------------------------------------
   const loadDisputes = async () => {
+    if (!token) return;
+
     setLoading(true);
 
     try {
@@ -27,7 +32,7 @@ const AdminEscrows = ({ token, setToast }) => {
         throw new Error(
           typeof data === "string"
             ? data
-            : data.message || "Could not load admin disputes."
+            : data?.message || "Could not load admin disputes."
         );
       }
 
@@ -36,13 +41,10 @@ const AdminEscrows = ({ token, setToast }) => {
       setEscrows(adminEscrows);
       setDisputes({});
 
-      // Load dispute details for each escrow
       for (const escrow of adminEscrows) {
-        const escrowId = escrow.id;
-
         try {
           const disputeResponse = await fetch(
-            `/api/escrow/${escrowId}/dispute`,
+            `/api/escrow/${escrow.id}/dispute`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -50,55 +52,43 @@ const AdminEscrows = ({ token, setToast }) => {
             }
           );
 
-          if (!disputeResponse.ok) {
-            continue;
-          }
+          if (!disputeResponse.ok) continue;
 
           const disputeData = await readResponse(disputeResponse);
 
           if (disputeData) {
             setDisputes((prev) => ({
               ...prev,
-              [escrowId]: disputeData,
+              [escrow.id]: disputeData,
             }));
           }
         } catch (error) {
           console.error(
-            `Could not load dispute for escrow ${escrowId}`,
+            `Could not load dispute for escrow ${escrow.id}`,
             error
           );
         }
       }
     } catch (error) {
-      console.error(
-        "Failed to load admin disputes",
-        error
-      );
+      console.error("Failed to load admin disputes", error);
 
       setToast({
         type: "error",
         title: "Failed to load disputes",
-        message:
-          error.message || "Something went wrong.",
+        message: error.message || "Something went wrong.",
       });
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     if (token) {
       loadDisputes();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // -----------------------------------------
-  // RESOLVE DISPUTE
-  // -----------------------------------------
-  const resolveDispute = async (
-    disputeId,
-    resolution
-  ) => {
+  const resolveDispute = async (disputeId, resolution) => {
     setResolvingId(disputeId);
 
     try {
@@ -110,9 +100,7 @@ const AdminEscrows = ({ token, setToast }) => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            resolution,
-          }),
+          body: JSON.stringify({ resolution }),
         }
       );
 
@@ -122,8 +110,7 @@ const AdminEscrows = ({ token, setToast }) => {
         throw new Error(
           typeof data === "string"
             ? data
-            : data.message ||
-                "Could not resolve the dispute."
+            : data?.message || "Could not resolve the dispute."
         );
       }
 
@@ -144,8 +131,7 @@ const AdminEscrows = ({ token, setToast }) => {
       setToast({
         type: "error",
         title: "Resolution failed",
-        message:
-          error.message || "Something went wrong.",
+        message: error.message || "Something went wrong.",
       });
     } finally {
       setResolvingId(null);
@@ -160,19 +146,16 @@ const AdminEscrows = ({ token, setToast }) => {
       total: escrows.length,
 
       underReview: escrows.filter(
-        (item) =>
-          item.status === "UNDER_REVIEW"
+        (item) => item.status === "UNDER_REVIEW"
       ).length,
 
       totalAmount: escrows.reduce(
-        (sum, item) =>
-          sum + Number(item.amount || 0),
+        (sum, item) => sum + Number(item.amount || 0),
         0
       ),
 
       withSellerResponse: escrows.filter(
-        (item) =>
-          disputes[item.id]?.sellerResponse
+        (item) => disputes[item.id]?.sellerResponse
       ).length,
     }),
     [escrows, disputes]
@@ -184,155 +167,91 @@ const AdminEscrows = ({ token, setToast }) => {
   if (loading) {
     return (
       <section className="seller-page">
-
         <div className="seller-loading">
-
           <div className="seller-loading-mark">
             <Icon name="shield" size={24} />
           </div>
 
-          <p className="micro-label">
-            ADMIN WORKSPACE
-          </p>
+          <p className="micro-label">ADMIN WORKSPACE</p>
 
-          <h2>
-            Loading dispute queue...
-          </h2>
+          <h2>Loading dispute queue...</h2>
 
           <span>
             Fetching escrow disputes that require review.
           </span>
-
         </div>
-
       </section>
     );
   }
 
-  // -----------------------------------------
-  // PAGE
-  // -----------------------------------------
   return (
     <section className="seller-page">
-
-      {/* HEADER */}
       <div className="seller-dashboard-head">
-
         <div>
+          <p className="micro-label">ADMIN WORKSPACE</p>
 
-          <p className="micro-label">
-            ADMIN WORKSPACE
-          </p>
-
-          <h2>
-            Dispute resolution
-          </h2>
+          <h2>Dispute resolution</h2>
 
           <p>
-            Review buyer disputes, seller responses,
-            and resolve protected escrow payments.
+            Review buyer disputes, seller responses, and resolve protected
+            escrow payments.
           </p>
-
         </div>
 
         <button
           className="seller-refresh"
           onClick={loadDisputes}
         >
-          <Icon
-            name="activity"
-            size={17}
-          />
-
+          <Icon name="activity" size={17} />
           Refresh
         </button>
-
       </div>
 
-      {/* SUMMARY */}
+      {/* ------------------------------------- */}
+      {/* DISPUTE SUMMARY */}
+      {/* ------------------------------------- */}
       <div className="seller-stats">
-
         <div className="seller-stat-card">
-
-          <span>
-            Disputes
-          </span>
-
-          <strong>
-            {summary.total}
-          </strong>
-
+          <span>Disputes</span>
+          <strong>{summary.total}</strong>
         </div>
 
         <div className="seller-stat-card">
-
-          <span>
-            Under review
-          </span>
-
-          <strong>
-            {summary.underReview}
-          </strong>
-
+          <span>Under review</span>
+          <strong>{summary.underReview}</strong>
         </div>
 
         <div className="seller-stat-card">
-
-          <span>
-            Seller responded
-          </span>
-
-          <strong>
-            {summary.withSellerResponse}
-          </strong>
-
+          <span>Seller responded</span>
+          <strong>{summary.withSellerResponse}</strong>
         </div>
 
         <div className="seller-stat-card">
-
-          <span>
-            Protected amount
-          </span>
-
-          <strong>
-            {formatMoney(summary.totalAmount)}
-          </strong>
-
+          <span>Protected amount</span>
+          <strong>{formatMoney(summary.totalAmount)}</strong>
         </div>
-
       </div>
 
+      {/* ------------------------------------- */}
       {/* EMPTY STATE */}
+      {/* ------------------------------------- */}
       {escrows.length === 0 ? (
-
         <div className="seller-empty">
-
           <div className="seller-empty-icon">
-            <Icon
-              name="check"
-              size={24}
-            />
+            <Icon name="check" size={24} />
           </div>
 
-          <h3>
-            No disputes require review
-          </h3>
+          <h3>No disputes require review</h3>
 
-          <p>
-            The dispute queue is currently clear.
-          </p>
-
+          <p>The dispute queue is currently clear.</p>
         </div>
-
       ) : (
-
+        /* ------------------------------------- */
         /* DISPUTE LIST */
+        /* ------------------------------------- */
         <div className="seller-order-list">
-
           {escrows.map((escrow) => {
-
-            const dispute =
-              disputes[escrow.id];
+            const dispute = disputes[escrow.id];
 
             const buyerName =
               escrow.buyer?.name ||
@@ -340,8 +259,7 @@ const AdminEscrows = ({ token, setToast }) => {
               escrow.buyer?.email ||
               "Unknown buyer";
 
-            const buyerEmail =
-              escrow.buyer?.email || "";
+            const buyerEmail = escrow.buyer?.email || "";
 
             const sellerName =
               escrow.seller?.name ||
@@ -349,261 +267,151 @@ const AdminEscrows = ({ token, setToast }) => {
               escrow.seller?.email ||
               "Unknown seller";
 
-            const sellerEmail =
-              escrow.seller?.email || "";
+            const sellerEmail = escrow.seller?.email || "";
 
-            const status =
-              escrow.status || "UNKNOWN";
+            const status = escrow.status || "UNKNOWN";
 
-            const statusClass =
-              status
-                .toLowerCase()
-                .replaceAll("_", "-");
+            const statusClass = status
+              .toLowerCase()
+              .replaceAll("_", "-");
 
             return (
               <article
                 className="seller-order-card"
                 key={escrow.id}
               >
-
-                {/* -------------------------------- */}
                 {/* TOP */}
-                {/* -------------------------------- */}
-
                 <div className="seller-order-top">
-
                   <div className="seller-order-title">
-
                     <div className="seller-order-icon">
-
-                      <Icon
-                        name="shield"
-                        size={21}
-                      />
-
+                      <Icon name="shield" size={21} />
                     </div>
 
                     <div>
-
                       <p className="micro-label">
                         ESCROW #{escrow.id}
                       </p>
 
                       <h3>
-                        {escrow.itemName ||
-                          "Unnamed item"}
+                        {escrow.itemName || "Unnamed item"}
                       </h3>
-
                     </div>
-
                   </div>
 
                   <span
                     className={`seller-status seller-status-${statusClass}`}
                   >
                     <i />
-                    {status.replaceAll(
-                      "_",
-                      " "
-                    )}
-                  </span>
 
+                    {status.replaceAll("_", " ")}
+                  </span>
                 </div>
 
-                {/* -------------------------------- */}
                 {/* ESCROW DETAILS */}
-                {/* -------------------------------- */}
-
                 <div className="seller-order-details">
-
                   <div>
+                    <span>BUYER</span>
 
-                    <span>
-                      BUYER
-                    </span>
-
-                    <strong>
-                      {buyerName}
-                    </strong>
+                    <strong>{buyerName}</strong>
 
                     {buyerEmail && (
-                      <small>
-                        {buyerEmail}
-                      </small>
+                      <small>{buyerEmail}</small>
                     )}
-
                   </div>
 
                   <div>
+                    <span>SELLER</span>
 
-                    <span>
-                      SELLER
-                    </span>
-
-                    <strong>
-                      {sellerName}
-                    </strong>
+                    <strong>{sellerName}</strong>
 
                     {sellerEmail && (
-                      <small>
-                        {sellerEmail}
-                      </small>
+                      <small>{sellerEmail}</small>
                     )}
-
                   </div>
 
                   <div>
-
-                    <span>
-                      AMOUNT
-                    </span>
+                    <span>AMOUNT</span>
 
                     <strong>
-                      {formatMoney(
-                        escrow.amount
-                      )}
+                      {formatMoney(escrow.amount)}
                     </strong>
 
-                    <small>
-                      Protected escrow
-                    </small>
-
+                    <small>Protected escrow</small>
                   </div>
-
                 </div>
 
-                {/* -------------------------------- */}
                 {/* TIMELINE */}
-                {/* -------------------------------- */}
-
                 <div className="seller-order-details">
-
                   <div>
-
-                    <span>
-                      CREATED
-                    </span>
+                    <span>CREATED</span>
 
                     <strong>
-                      {formatDate(
-                        escrow.createdAt
-                      )}
+                      {formatDate(escrow.createdAt)}
                     </strong>
-
                   </div>
 
                   {escrow.shippedAt && (
                     <div>
-
-                      <span>
-                        SHIPPED
-                      </span>
+                      <span>SHIPPED</span>
 
                       <strong>
-                        {formatDate(
-                          escrow.shippedAt
-                        )}
+                        {formatDate(escrow.shippedAt)}
                       </strong>
-
                     </div>
                   )}
 
                   <div>
+                    <span>TRANSACTION</span>
 
-                    <span>
-                      TRANSACTION
-                    </span>
-
-                    <strong>
-                      #{escrow.id}
-                    </strong>
-
+                    <strong>#{escrow.id}</strong>
                   </div>
-
                 </div>
 
-                {/* -------------------------------- */}
                 {/* DISPUTE */}
-                {/* -------------------------------- */}
-
                 {dispute && (
-
                   <div className="seller-dispute-panel">
-
                     {/* DISPUTE HEADER */}
-
                     <div className="seller-dispute-header">
-
                       <div className="seller-dispute-icon">
-
-                        <Icon
-                          name="shield"
-                          size={19}
-                        />
-
+                        <Icon name="shield" size={19} />
                       </div>
 
                       <div>
-
-                        <strong>
-                          Dispute raised
-                        </strong>
+                        <strong>Dispute raised</strong>
 
                         <span>
-                          Buyer has requested
-                          administrative review.
+                          Buyer has requested administrative review.
                         </span>
-
                       </div>
-
                     </div>
 
                     {/* DISPUTE DETAILS */}
-
                     <div className="seller-dispute-details">
-
                       <div>
-
-                        <span>
-                          REASON
-                        </span>
+                        <span>REASON</span>
 
                         <strong>
-                          {dispute.reason
-                            ?.replaceAll(
-                              "_",
-                              " "
-                            )}
+                          {dispute.reason?.replaceAll("_", " ") ||
+                            "Not specified"}
                         </strong>
-
                       </div>
 
                       <div>
-
-                        <span>
-                          BUYER DESCRIPTION
-                        </span>
+                        <span>BUYER DESCRIPTION</span>
 
                         <strong>
                           {dispute.description ||
                             "No description provided."}
                         </strong>
-
                       </div>
 
                       <div>
-
-                        <span>
-                          SELLER RESPONSE
-                        </span>
+                        <span>SELLER RESPONSE</span>
 
                         <div className="seller-dispute-response">
-
                           {dispute.sellerResponse ? (
                             <>
-                              <strong>
-                                Seller response
-                              </strong>
+                              <strong>Seller response</strong>
 
                               <span>
                                 {dispute.sellerResponse}
@@ -611,63 +419,41 @@ const AdminEscrows = ({ token, setToast }) => {
                             </>
                           ) : (
                             <span>
-                              No response from the
-                              seller yet.
+                              No response from the seller yet.
                             </span>
                           )}
-
                         </div>
-
                       </div>
-
                     </div>
 
                     {/* ADMIN DECISION */}
-
                     <div className="seller-order-action">
-
                       <div>
-
-                        <strong>
-                          Resolve this dispute
-                        </strong>
+                        <strong>Resolve this dispute</strong>
 
                         <span>
-                          Choose whether the protected
-                          funds should go to the seller
-                          or return to the buyer.
+                          Choose whether the protected funds should go to
+                          the seller or return to the buyer.
                         </span>
-
                       </div>
 
                       <div
                         style={{
                           display: "flex",
-                          gap: "10px",
+                          gap: 10,
                           flexWrap: "wrap",
                         }}
                       >
-
                         <button
                           className="seller-ship-button"
                           onClick={() =>
-                            resolveDispute(
-                              dispute.id,
-                              "RELEASE"
-                            )
+                            resolveDispute(dispute.id, "RELEASE")
                           }
-                          disabled={
-                            resolvingId ===
-                            dispute.id
-                          }
+                          disabled={resolvingId === dispute.id}
                         >
-                          <Icon
-                            name="check"
-                            size={17}
-                          />
+                          <Icon name="check" size={17} />
 
-                          {resolvingId ===
-                          dispute.id
+                          {resolvingId === dispute.id
                             ? "Resolving..."
                             : "Release Funds"}
                         </button>
@@ -675,42 +461,25 @@ const AdminEscrows = ({ token, setToast }) => {
                         <button
                           className="seller-ship-button"
                           onClick={() =>
-                            resolveDispute(
-                              dispute.id,
-                              "REFUND"
-                            )
+                            resolveDispute(dispute.id, "REFUND")
                           }
-                          disabled={
-                            resolvingId ===
-                            dispute.id
-                          }
+                          disabled={resolvingId === dispute.id}
                         >
-                          <Icon
-                            name="shield"
-                            size={17}
-                          />
+                          <Icon name="shield" size={17} />
 
-                          {resolvingId ===
-                          dispute.id
+                          {resolvingId === dispute.id
                             ? "Resolving..."
                             : "Refund Buyer"}
                         </button>
-
                       </div>
-
                     </div>
-
                   </div>
-
                 )}
-
               </article>
             );
           })}
-
         </div>
       )}
-
     </section>
   );
 };

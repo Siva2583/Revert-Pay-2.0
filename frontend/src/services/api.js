@@ -2,7 +2,8 @@ const API = {
   login: "/api/auth/login",
   me: "/api/me",
   register: "/api/auth/register",
-
+  resetPassword: "/api/auth/reset-password",
+ forgotPassword: "/api/auth/forgot-password",
   createAccount: "/api/accounts/new",
 
   getAccount: (accountNumber) =>

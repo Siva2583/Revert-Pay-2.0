@@ -35,6 +35,7 @@ function MyAccount({ token }) {
         }
 
         setData(result);
+        console.log("MY ACCOUNT API RESPONSE:", result);
       } catch {
         setError(
           "Could not connect to the backend server."
@@ -198,7 +199,7 @@ function MyAccount({ token }) {
           </span>
         </div>
 
-        <LedgerTable ledger={ledger} />
+        <LedgerTable ledger={ledger} token={token} />
       </section>
     </div>
   );

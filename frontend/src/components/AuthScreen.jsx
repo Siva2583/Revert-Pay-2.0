@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Logo from "./Logo";
 import Icon from "./Icon";
@@ -12,6 +13,8 @@ function AuthScreen({ onLogin }) {
   const [role, setRole] = useState("BUYER");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
 
   const submit = async (event) => {
     event.preventDefault();
@@ -68,6 +71,45 @@ function AuthScreen({ onLogin }) {
       }
 
       onLogin(token);
+    } catch {
+      setError("Cannot reach the RevertPay server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (event) => {
+    event.preventDefault();
+    setError("");
+    setResetMessage("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(API.forgotPassword, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await readResponse(response);
+
+      if (!response.ok) {
+        setError(
+          typeof data === "string"
+            ? data
+            : data.message || "Unable to process your request."
+        );
+        return;
+      }
+
+      setResetMessage(
+        typeof data === "string"
+          ? data
+          : data.message ||
+              "If an account exists with that email, password reset instructions will be sent."
+      );
     } catch {
       setError("Cannot reach the RevertPay server.");
     } finally {
@@ -159,127 +201,218 @@ function AuthScreen({ onLogin }) {
 
           <div className="form-heading">
             <p className="micro-label">
-              {mode === "login"
-                ? "SECURE SIGN IN"
-                : "NEW OPERATOR"}
+              {forgotPassword
+                ? "PASSWORD RECOVERY"
+                : mode === "login"
+                  ? "SECURE SIGN IN"
+                  : "NEW OPERATOR"}
             </p>
 
             <h2>
-              {mode === "login"
-                ? "Welcome back."
-                : "Create your workspace."}
+              {forgotPassword
+                ? "Reset your password."
+                : mode === "login"
+                  ? "Welcome back."
+                  : "Create your workspace."}
             </h2>
 
             <p>
-              {mode === "login"
-                ? "Enter your credentials to access your ledger workspace."
-                : "Register a role to begin using RevertPay."}
+              {forgotPassword
+                ? "We'll help you regain access to your workspace."
+                : mode === "login"
+                  ? "Enter your credentials to access your ledger workspace."
+                  : "Register a role to begin using RevertPay."}
             </p>
           </div>
 
           {error && (
             <div
               className={`auth-alert ${
-                error.includes("successfully")
-                  ? "success"
-                  : ""
+                error.includes("successfully") ? "success" : ""
               }`}
+              role="alert"
             >
               {error}
             </div>
           )}
 
-          <form onSubmit={submit} className="auth-form">
-            {mode === "register" && (
+          <form
+            onSubmit={
+              forgotPassword ? handleForgotPassword : submit
+            }
+            className="auth-form"
+          >
+            {forgotPassword ? (
               <>
-                <label>Full name</label>
+                <p className="forgot-password-description">
+                  Enter your registered email address. If an account
+                  exists, we'll send you instructions to reset your
+                  password.
+                </p>
+
+                <label htmlFor="reset-email">Email address</label>
 
                 <input
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  id="reset-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
                   required
                 />
+
+                {resetMessage && (
+                  <div
+                    className="auth-alert success"
+                    role="status"
+                  >
+                    {resetMessage}
+                  </div>
+                )}
+
+                <button
+                  className="auth-submit"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? "Sending..." : "Send reset link"}
+                  <Icon name="chevron" size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  className="forgot-password-back"
+                  onClick={() => {
+                    setForgotPassword(false);
+                    setError("");
+                    setResetMessage("");
+                  }}
+                >
+                  Back to sign in
+                </button>
               </>
-            )}
-
-            <label>Email address</label>
-
-            <input
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <label>Password</label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              minLength="6"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-
-            {mode === "register" && (
+            ) : (
               <>
-                <label>Workspace role</label>
+                {mode === "register" && (
+                  <>
+                    <label htmlFor="register-name">Full name</label>
 
-                <div className="role-options">
-                  {["BUYER", "SELLER", "ADMIN"].map((item) => (
+                    <input
+                      id="register-name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      autoComplete="name"
+                      required
+                    />
+                  </>
+                )}
+
+                <label htmlFor="auth-email">Email address</label>
+
+                <input
+                  id="auth-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+
+                <label htmlFor="auth-password">Password</label>
+
+                <input
+                  id="auth-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  minLength={6}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete={
+                    mode === "login"
+                      ? "current-password"
+                      : "new-password"
+                  }
+                  required
+                />
+
+                {mode === "login" && (
+                  <div className="forgot-password-row">
                     <button
-                      key={item}
                       type="button"
-                      className={
-                        role === item ? "selected" : ""
-                      }
-                      onClick={() => setRole(item)}
+                      className="forgot-password-link"
+                      onClick={() => {
+                        setForgotPassword(true);
+                        setError("");
+                        setResetMessage("");
+                      }}
                     >
-                      {item}
+                      Forgot password?
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {mode === "register" && (
+                  <>
+                    <label>Workspace role</label>
+
+                    <div className="role-options">
+                      {["BUYER", "SELLER", "ADMIN"].map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          className={
+                            role === item ? "selected" : ""
+                          }
+                          onClick={() => setRole(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <button
+                  className="auth-submit"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading
+                    ? "Processing..."
+                    : mode === "login"
+                      ? "Enter workspace"
+                      : "Create account"}
+
+                  <Icon name="chevron" size={18} />
+                </button>
               </>
             )}
-
-            <button
-              className="auth-submit"
-              disabled={loading}
-            >
-              {loading
-                ? "Processing..."
-                : mode === "login"
-                  ? "Enter workspace"
-                  : "Create account"}
-
-              <Icon name="chevron" size={18} />
-            </button>
           </form>
 
-          <div className="auth-mode-switch">
-            {mode === "login"
-              ? "New to RevertPay?"
-              : "Already have an account?"}
-
-            <button
-              type="button"
-              onClick={() => {
-                setMode(
-                  mode === "login" ? "register" : "login"
-                );
-                setError("");
-                setPassword("");
-              }}
-            >
+          {!forgotPassword && (
+            <div className="auth-mode-switch">
               {mode === "login"
-                ? "Create account"
-                : "Sign in"}
-            </button>
-          </div>
+                ? "New to RevertPay?"
+                : "Already have an account?"}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(
+                    mode === "login" ? "register" : "login"
+                  );
+                  setError("");
+                  setPassword("");
+                }}
+              >
+                {mode === "login" ? "Create account" : "Sign in"}
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </main>
@@ -287,3 +420,4 @@ function AuthScreen({ onLogin }) {
 }
 
 export default AuthScreen;
+

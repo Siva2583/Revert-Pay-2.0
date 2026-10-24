@@ -89,28 +89,46 @@ public class EscrowService {
 
         escrowRepository.save(transaction);
     }
+    @Transactional
     public EscrowInitiateResponse cancelTransaction(Long id, String token) {
 
         if (!jwtService.isTokenValid(token)) {
             throw new RuntimeException("Invalid or expired token");
         }
-        EscrowTransaction transaction = escrowRepository.findById(id).orElseThrow(() -> new RuntimeException("Escrow transaction not found"));
+
+        EscrowTransaction transaction = escrowRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Escrow transaction not found"));
 
         Long buyerId = jwtService.extractUserId(token);
-        Long escrowBuyerId = transaction.getBuyer().getId();
 
-        if (!buyerId.equals(escrowBuyerId)) {
-            throw new RuntimeException("Mismatched Credentials!!");
+        if (!buyerId.equals(transaction.getBuyer().getId())) {
+            throw new RuntimeException("Unauthorized: Not the transaction buyer");
         }
 
-//        if (transaction.getStatus() != EscrowStatus.PAYMENT_INITIATED) {
-//            throw new RuntimeException(
-//                    "Escrow cannot be cancelled from status: " + transaction.getStatus()
-//            );
-//        }
-        transitionService.transition(transaction,EscrowStatus.CANCELLED,escrowBuyerId,"Payment Cancelled!");
-        //transaction.setStatus(EscrowStatus.CANCELLED);
-        EscrowTransaction savedTransaction = escrowRepository.save(transaction);
+        if (transaction.getStatus() != EscrowStatus.PAYMENT_INITIATED) {
+            throw new RuntimeException(
+                    "Transaction cannot be cancelled from status: "
+                            + transaction.getStatus());
+        }
+
+        LocalDateTime deadline = transaction.getConfirmationDeadline();
+
+        if (deadline == null || !LocalDateTime.now().isBefore(deadline)) {
+            throw new RuntimeException(
+                    "Confirmation window expired. Transaction cannot be cancelled.");
+        }
+
+        transitionService.transition(
+                transaction,
+                EscrowStatus.CANCELLED,
+                buyerId,
+                "Buyer declined transaction"
+        );
+
+        EscrowTransaction savedTransaction =
+                escrowRepository.save(transaction);
+
         EscrowInitiateResponse response = new EscrowInitiateResponse();
         response.setEscrowid(savedTransaction.getId());
         response.setSellername(savedTransaction.getSeller().getName());
@@ -133,29 +151,47 @@ public class EscrowService {
             throw new IllegalStateException("Unable to request hash ",e);
         }
     }
+    @Transactional
     public EscrowInitiateResponse confirmTransaction(Long id, String token) {
 
         if (!jwtService.isTokenValid(token)) {
             throw new RuntimeException("Invalid or expired token");
         }
-        EscrowTransaction transaction = escrowRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Escrow transaction not found"));
+
+        EscrowTransaction transaction = escrowRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Escrow transaction not found"));
 
         Long buyerId = jwtService.extractUserId(token);
-        Long escrowBuyerId = transaction.getBuyer().getId();
 
-        if (!buyerId.equals(escrowBuyerId)) {
-            throw new RuntimeException("Mismatched Credentials!!");
+        if (!buyerId.equals(transaction.getBuyer().getId())) {
+            throw new RuntimeException("Unauthorized: Not the transaction buyer");
         }
 
-//        if (transaction.getStatus() != EscrowStatus.PAYMENT_INITIATED) {
-//            throw new RuntimeException(
-//                    "Escrow cannot be confirmed from status: " + transaction.getStatus()
-//            );
-//        }
-//        transaction.setStatus(EscrowStatus.CREATED);
-        transitionService.transition(transaction,EscrowStatus.CREATED,escrowBuyerId,"Payment Initiated!");
-        EscrowTransaction savedTransaction = escrowRepository.save(transaction);
+        // Confirmation is allowed only during the pending stage.
+        if (transaction.getStatus() != EscrowStatus.PAYMENT_INITIATED) {
+            throw new RuntimeException(
+                    "Transaction cannot be confirmed from status: "
+                            + transaction.getStatus());
+        }
+
+        // Reject confirmation after the 40-second deadline.
+        LocalDateTime deadline = transaction.getConfirmationDeadline();
+
+        if (deadline == null || !LocalDateTime.now().isBefore(deadline)) {
+            throw new RuntimeException(
+                    "Confirmation window expired. Transaction cannot be confirmed.");
+        }
+        transitionService.transition(
+                transaction,
+                EscrowStatus.CREATED,
+                buyerId,
+                "Buyer confirmed transaction"
+        );
+
+        EscrowTransaction savedTransaction =
+                escrowRepository.save(transaction);
+
         EscrowInitiateResponse response = new EscrowInitiateResponse();
         response.setEscrowid(savedTransaction.getId());
         response.setSellername(savedTransaction.getSeller().getName());
@@ -209,11 +245,19 @@ public class EscrowService {
 
         BigDecimal amount = req.getAmount();
         String itemName = req.getItemName();
+        if (amount == null || amount.signum() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Amount must be greater than zero"
+            );
+        }
 
         EscrowInitiateResponse res = new EscrowInitiateResponse();
 
         if (!jwtService.isTokenValid(token)) {
-            return res;
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Invalid or expired token"
+            );
         }
 
         Long buyerId = jwtService.extractUserId(token);
@@ -256,55 +300,91 @@ public class EscrowService {
         res.setSellername(seller.getName());
         res.setAmount(savedEscrow.getAmount());
         res.setItemName(savedEscrow.getItemName());
-        checkExpiry(eid);
+
         return res;
     }
+    @Transactional
     public String checkExpiry(Long id) {
-        EscrowTransaction transaction = escrowRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Invalid!!"));
+        EscrowTransaction transaction = escrowRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new RuntimeException("Escrow not found"));
+        if (transaction.getStatus() != EscrowStatus.PAYMENT_INITIATED) {
+            return "Not pending confirmation";
+        }
 
         LocalDateTime deadline = transaction.getConfirmationDeadline();
 
-        if (deadline != null && LocalDateTime.now().isAfter(deadline)) {
+        if (deadline != null && !LocalDateTime.now().isBefore(deadline)) {
             transitionService.transition(
                     transaction,
-                    EscrowStatus.EXPIRED,null,"Expired Session"
+                    EscrowStatus.EXPIRED,
+                    null,
+                    "Confirmation window expired"
             );
+
             escrowRepository.save(transaction);
-            return "Expired!!";
+            return "Expired";
         }
 
-        return "Valid!!";
+        return "Still within confirmation window";
     }
     @Transactional
-    public EscrowInitiateResponse fundTransaction(Long id, String token) {
-        EscrowInitiateResponse res=new EscrowInitiateResponse();
-        if(!(jwtService.isTokenValid(token))){
-            throw new RuntimeException("Invalid Token!!");
-        }
-        EscrowTransaction transaction =escrowRepository.findById(id).orElseThrow(()-> new RuntimeException("Invalid Transaction!!"));
-        Long token_id=jwtService.extractUserId(token);
-        Long transaction_id=transaction.getBuyer().getId();
-        if(!token_id.equals(transaction_id)){
-            throw new RuntimeException("Invalid matching!!");
-        }
-//        if(!(transaction.getStatus()==EscrowStatus.CREATED)){
-//            throw new RuntimeException("Payment Rejected!!");
-//        }
-        Account buyer=accountRepository.findByAccountNumber("ACC"+token_id).orElseThrow(()->new RuntimeException("Invalid Creds!!"));
-        Account escrow_acc=accountRepository.findByAccountNumber("ESCROW_HOLDING").orElseThrow(()->new RuntimeException("No escrow!!"));
-        BigDecimal amount=transaction.getAmount();
 
-        ledgerService.transfer(buyer,escrow_acc,amount,transaction.getId());
-        //transaction.setStatus(EscrowStatus.FUNDED);
-        transitionService.transition(transaction,EscrowStatus.FUNDED,token_id,"Funded Successfully!");
-        escrowRepository.save(transaction);
-        res.setEscrowid(id);
-        res.setSellername(transaction.getSeller().getName());
-        res.setItemName(transaction.getItemName());
-        res.setAmount(amount);
-        res.setStatus(transaction.getStatus());
-        return res;
+    public EscrowInitiateResponse fundTransaction(Long id, String token) {
+
+        if (!jwtService.isTokenValid(token)) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+
+        EscrowTransaction transaction = escrowRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Transaction not found"));
+
+        Long buyerId = jwtService.extractUserId(token);
+
+        if (!buyerId.equals(transaction.getBuyer().getId())) {
+            throw new RuntimeException("Unauthorized: Not the transaction buyer");
+        }
+
+        // Funding is permitted ONLY after successful confirmation.
+        if (transaction.getStatus() != EscrowStatus.CREATED) {
+            throw new RuntimeException(
+                    "Payment rejected. Transaction must be confirmed first.");
+        }
+
+        Account buyer = accountRepository
+                .findByAccountNumber("ACC" + buyerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Buyer account not found"));
+
+        Account escrowAccount = accountRepository
+                .findByAccountNumber("ESCROW_HOLDING")
+                .orElseThrow(() ->
+                        new RuntimeException("Escrow holding account not found"));
+
+        BigDecimal amount = transaction.getAmount();
+
+        // Transfer money only after all validation passes.
+        ledgerService.transfer(
+                buyer,
+                escrowAccount,
+                amount,
+                transaction.getId()
+        );
+
+        transitionService.transition(transaction, EscrowStatus.FUNDED,buyerId,
+                "Escrow funded successfully");
+
+        EscrowTransaction savedTransaction =
+                escrowRepository.save(transaction);
+
+        EscrowInitiateResponse response = new EscrowInitiateResponse();
+        response.setEscrowid(savedTransaction.getId());
+        response.setSellername(savedTransaction.getSeller().getName());
+        response.setItemName(savedTransaction.getItemName());
+        response.setAmount(savedTransaction.getAmount());
+        response.setStatus(savedTransaction.getStatus());
+
+        return response;
     }
 
     public void shipTransaction(Long id, String token) {
