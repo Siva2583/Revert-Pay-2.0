@@ -46,13 +46,13 @@ body {
 .button-primary {
   border-color: var(--brand);
   background: var(--brand);
-  box-shadow: 0 7px 18px rgba(21, 69, 53, 0.17);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.28);
 }
 
 .button-primary:hover:not(:disabled) {
   border-color: var(--brand-hover);
   background: var(--brand-hover);
-  box-shadow: 0 9px 22px rgba(21, 69, 53, 0.22);
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.34);
 }
 
 .button-secondary {
@@ -93,7 +93,7 @@ body {
 .form-field select:focus,
 .form-field textarea:focus {
   border-color: var(--focus);
-  box-shadow: 0 0 0 4px rgba(57, 121, 95, 0.12);
+  box-shadow: var(--focus-ring);
 }
 
 .form-field select {
@@ -308,12 +308,18 @@ body {
 .auth-form-panel .button-primary {
   border-color: var(--brand);
   background: var(--brand);
-  box-shadow: 0 9px 22px rgba(21, 69, 53, 0.15);
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.3);
 }
 
 .auth-form-panel .button-primary:hover:not(:disabled) {
   border-color: var(--brand-hover);
   background: var(--brand-hover);
+}
+
+.button-primary:active:not(:disabled),
+.auth-form-panel .button-primary:active:not(:disabled) {
+  border-color: var(--brand-pressed);
+  background: var(--brand-pressed);
 }
 
 .auth-form-panel .text-button {
@@ -324,7 +330,7 @@ body {
   min-height: 64px;
   border-color: var(--border-strong);
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--surface);
 }
 
 .role-option.selected {
@@ -349,7 +355,7 @@ body {
 /* High-contrast workspace shell */
 .sidebar {
   border-right: 1px solid var(--dark-border);
-  background: linear-gradient(180deg, #161d18 0%, var(--ink) 58%, #0f1511 100%);
+  background: linear-gradient(180deg, #0a0d0b 0%, var(--ink) 58%, #050505 100%);
   color: var(--on-dark);
 }
 
@@ -453,8 +459,8 @@ body {
 }
 
 .sign-out:hover {
-  background: #2e2225;
-  color: #e8b4ac;
+  background: var(--error-soft);
+  color: var(--error);
 }
 
 .sidebar-close {
@@ -467,7 +473,7 @@ body {
   min-height: 112px;
   padding: 23px 40px;
   border-bottom-color: var(--border);
-  background: rgba(245, 242, 235, 0.9);
+  background: var(--surface);
 }
 
 .topbar h1 {
@@ -517,7 +523,7 @@ body {
   overflow: hidden;
   border: 1px solid var(--dark-border);
   border-radius: 19px;
-  background: radial-gradient(circle at 84% 4%, rgba(31, 92, 70, 0.22), transparent 40%), linear-gradient(135deg, var(--ink) 0%, #18231c 100%);
+  background: radial-gradient(circle at 84% 4%, rgba(31, 92, 70, 0.22), transparent 40%), linear-gradient(135deg, var(--ink) 0%, #082a1f 100%);
   box-shadow: 0 20px 48px rgba(17, 23, 19, 0.12);
 }
 
@@ -576,14 +582,14 @@ body {
 }
 
 .overview-welcome .button-secondary {
-  border-color: #3b4a40;
+  border-color: #343b35;
   background: var(--dark-surface);
   color: var(--on-dark);
   box-shadow: none;
 }
 
 .overview-welcome .button-secondary:hover:not(:disabled) {
-  border-color: #718176;
+  border-color: #858f87;
   background: var(--dark-surface-hover);
 }
 
@@ -598,42 +604,42 @@ body {
 .attention-card {
   min-height: 246px;
   padding: 23px;
-  border: 0;
+  border: 1px solid var(--brand-border);
   border-radius: 15px;
-  background: var(--highlight);
-  color: var(--highlight-ink);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  background: var(--surface-brand);
+  color: var(--on-dark);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.24);
 }
 
 .attention-card:hover {
-  background: var(--highlight-hover);
+  background: var(--dark-surface-hover);
 }
 
 .attention-card-icon {
-  border-color: rgba(73, 57, 36, 0.14);
-  background: rgba(73, 57, 36, 0.07);
-  color: var(--highlight-ink);
+  border-color: rgba(0, 200, 51, 0.22);
+  background: rgba(0, 200, 51, 0.1);
+  color: var(--accent);
 }
 
 .attention-card-label {
-  color: var(--highlight-muted);
+  color: var(--highlight);
   font-size: 10px;
   letter-spacing: 0.13em;
 }
 
 .attention-card > strong {
-  color: var(--highlight-ink);
+  color: var(--on-dark);
   font-size: 52px;
   font-weight: 620;
 }
 
 .attention-card > p {
-  color: var(--highlight-muted);
+  color: var(--on-dark-secondary);
   font-size: 12px;
 }
 
 .attention-link {
-  color: var(--highlight-ink);
+  color: var(--accent);
   font-size: 12px;
 }
 
@@ -926,7 +932,7 @@ body {
   position: relative;
   z-index: 1;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--border-strong);
   border-radius: 20px;
   background: var(--background);
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.3);
