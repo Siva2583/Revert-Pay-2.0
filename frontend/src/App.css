@@ -188,7 +188,7 @@
   border-color: var(--brand);
   background: var(--brand);
   color: white;
-  box-shadow: 0 1px 2px rgba(68, 62, 115, 0.16);
+  box-shadow: 0 1px 2px rgba(21, 69, 53, 0.16);
 }
 
 .button-primary:hover:not(:disabled) {
@@ -347,7 +347,7 @@
 .input-shell input::placeholder,
 textarea::placeholder,
 .search-control input::placeholder {
-  color: #7b7480;
+  color: #78827a;
   opacity: 1;
 }
 
@@ -934,7 +934,7 @@ textarea::placeholder,
   gap: 24px;
   padding: 22px 36px;
   border-bottom: 1px solid var(--border);
-  background: rgba(244, 241, 235, 0.94);
+  background: rgba(245, 242, 235, 0.94);
   backdrop-filter: blur(14px);
 }
 
@@ -2212,7 +2212,7 @@ textarea::placeholder,
   place-items: center;
   padding: 24px;
   overflow-y: auto;
-  background: rgba(23, 24, 33, 0.5);
+  background: rgba(17, 23, 19, 0.5);
   backdrop-filter: blur(4px);
   animation: backdrop-in var(--motion-normal) ease both;
 }
@@ -3016,7 +3016,7 @@ textarea::placeholder,
     height: 100%;
     padding: 0;
     border: 0;
-    background: rgba(23, 24, 33, 0.42);
+    background: rgba(17, 23, 19, 0.42);
     backdrop-filter: blur(2px);
   }
 
