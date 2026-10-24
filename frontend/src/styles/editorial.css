@@ -13,7 +13,7 @@ body {
 .account-summary-card {
   border-color: var(--border);
   border-radius: 16px;
-  box-shadow: 0 1px 1px rgba(27, 39, 31, 0.02), 0 12px 34px rgba(27, 39, 31, 0.035);
+  box-shadow: 0 1px 1px rgba(52, 44, 60, 0.02), 0 12px 34px rgba(52, 44, 60, 0.035);
 }
 
 .eyebrow {
@@ -46,13 +46,13 @@ body {
 .button-primary {
   border-color: var(--brand);
   background: var(--brand);
-  box-shadow: 0 7px 18px rgba(32, 73, 55, 0.17);
+  box-shadow: 0 7px 18px rgba(68, 62, 115, 0.17);
 }
 
 .button-primary:hover:not(:disabled) {
   border-color: var(--brand-hover);
   background: var(--brand-hover);
-  box-shadow: 0 9px 22px rgba(32, 73, 55, 0.22);
+  box-shadow: 0 9px 22px rgba(68, 62, 115, 0.22);
 }
 
 .button-secondary {
@@ -79,7 +79,7 @@ body {
   min-height: 50px;
   border-color: var(--border-strong);
   border-radius: 11px;
-  box-shadow: 0 1px 2px rgba(27, 39, 31, 0.025);
+  box-shadow: 0 1px 2px rgba(52, 44, 60, 0.025);
 }
 
 .input-shell input {
@@ -93,7 +93,7 @@ body {
 .form-field select:focus,
 .form-field textarea:focus {
   border-color: var(--focus);
-  box-shadow: 0 0 0 4px rgba(59, 113, 88, 0.12);
+  box-shadow: 0 0 0 4px rgba(108, 100, 168, 0.12);
 }
 
 .form-field select {
@@ -161,14 +161,14 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 54%;
+  object-position: 50% 0%;
 }
 
 .auth-art-shade {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(7, 15, 11, 0.06) 0%, rgba(7, 15, 11, 0.12) 42%, rgba(7, 15, 11, 0.7) 100%);
+  background: linear-gradient(180deg, rgba(12, 12, 22, 0.06) 0%, rgba(12, 12, 22, 0.12) 42%, rgba(12, 12, 22, 0.7) 100%);
 }
 
 .auth-brand,
@@ -214,7 +214,7 @@ body {
 .auth-copy h1 span {
   display: block;
   margin-top: 7px;
-  color: var(--mint);
+  color: var(--highlight);
   font-weight: 710;
 }
 
@@ -247,7 +247,7 @@ body {
 }
 
 .auth-principles svg {
-  color: var(--mint);
+  color: var(--accent);
 }
 
 .auth-footer-note {
@@ -308,7 +308,7 @@ body {
 .auth-form-panel .button-primary {
   border-color: var(--brand);
   background: var(--brand);
-  box-shadow: 0 9px 22px rgba(32, 73, 55, 0.15);
+  box-shadow: 0 9px 22px rgba(68, 62, 115, 0.15);
 }
 
 .auth-form-panel .button-primary:hover:not(:disabled) {
@@ -349,7 +349,7 @@ body {
 /* High-contrast workspace shell */
 .sidebar {
   border-right: 1px solid var(--dark-border);
-  background: var(--ink);
+  background: linear-gradient(180deg, #191923 0%, var(--ink) 58%, #14151e 100%);
   color: var(--on-dark);
 }
 
@@ -409,10 +409,10 @@ body {
 }
 
 .side-nav button.current {
-  border-color: var(--mint);
-  background: var(--mint);
+  border-color: var(--accent);
+  background: var(--accent);
   color: var(--ink);
-  box-shadow: 0 7px 20px rgba(116, 145, 126, 0.09);
+  box-shadow: 0 7px 20px rgba(143, 134, 190, 0.09);
   font-weight: 760;
 }
 
@@ -453,8 +453,8 @@ body {
 }
 
 .sign-out:hover {
-  background: #2c201c;
-  color: #e5b0a5;
+  background: #2e2225;
+  color: #e8b4ac;
 }
 
 .sidebar-close {
@@ -467,7 +467,7 @@ body {
   min-height: 112px;
   padding: 23px 40px;
   border-bottom-color: var(--border);
-  background: rgba(242, 240, 233, 0.9);
+  background: rgba(244, 241, 235, 0.9);
 }
 
 .topbar h1 {
@@ -517,14 +517,14 @@ body {
   overflow: hidden;
   border: 1px solid var(--dark-border);
   border-radius: 19px;
-  background: var(--ink);
-  box-shadow: 0 20px 48px rgba(13, 24, 19, 0.12);
+  background: radial-gradient(circle at 84% 4%, rgba(87, 81, 139, 0.22), transparent 40%), linear-gradient(135deg, var(--ink) 0%, #1d1c2b 100%);
+  box-shadow: 0 20px 48px rgba(23, 24, 33, 0.12);
 }
 
 .overview-welcome::before {
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(rgba(199, 221, 206, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(199, 221, 206, 0.035) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(217, 213, 239, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(217, 213, 239, 0.035) 1px, transparent 1px);
   background-size: 34px 34px;
   content: "";
   mask-image: linear-gradient(90deg, black, transparent 80%);
@@ -564,31 +564,31 @@ body {
 }
 
 .overview-welcome .button-primary {
-  border-color: var(--mint);
-  background: var(--mint);
+  border-color: var(--accent);
+  background: var(--accent);
   color: var(--ink);
   box-shadow: none;
 }
 
 .overview-welcome .button-primary:hover:not(:disabled) {
-  border-color: var(--mint-hover);
-  background: var(--mint-hover);
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
 }
 
 .overview-welcome .button-secondary {
-  border-color: #405349;
+  border-color: #454152;
   background: var(--dark-surface);
   color: var(--on-dark);
   box-shadow: none;
 }
 
 .overview-welcome .button-secondary:hover:not(:disabled) {
-  border-color: #64776a;
+  border-color: #746d83;
   background: var(--dark-surface-hover);
 }
 
 .overview-welcome .button-ghost {
-  color: var(--mint);
+  color: var(--accent);
 }
 
 .overview-welcome .button-ghost:hover:not(:disabled) {
@@ -600,40 +600,40 @@ body {
   padding: 23px;
   border: 0;
   border-radius: 15px;
-  background: var(--mint);
-  color: var(--ink);
+  background: var(--highlight);
+  color: var(--highlight-ink);
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }
 
 .attention-card:hover {
-  background: var(--mint-hover);
+  background: var(--highlight-hover);
 }
 
 .attention-card-icon {
-  border-color: rgba(13, 24, 19, 0.12);
-  background: rgba(13, 24, 19, 0.07);
-  color: var(--ink);
+  border-color: rgba(73, 57, 36, 0.14);
+  background: rgba(73, 57, 36, 0.07);
+  color: var(--highlight-ink);
 }
 
 .attention-card-label {
-  color: var(--brand);
+  color: var(--highlight-muted);
   font-size: 10px;
   letter-spacing: 0.13em;
 }
 
 .attention-card > strong {
-  color: var(--ink);
+  color: var(--highlight-ink);
   font-size: 52px;
   font-weight: 620;
 }
 
 .attention-card > p {
-  color: var(--brand-hover);
+  color: var(--highlight-muted);
   font-size: 12px;
 }
 
 .attention-link {
-  color: var(--ink);
+  color: var(--highlight-ink);
   font-size: 12px;
 }
 
@@ -657,6 +657,21 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 9px;
+}
+
+.overview-page .metric-card:nth-child(2) .metric-icon {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.overview-page .metric-card:nth-child(3) .metric-icon {
+  background: var(--surface-brand);
+  color: var(--brand);
+}
+
+.overview-page .metric-card:nth-child(4) .metric-icon {
+  background: var(--highlight-soft);
+  color: var(--highlight-muted);
 }
 
 .metric-value {
@@ -880,7 +895,7 @@ body {
 
 .toast {
   border-radius: 14px;
-  box-shadow: 0 18px 55px rgba(13, 24, 19, 0.17);
+  box-shadow: 0 18px 55px rgba(23, 24, 33, 0.17);
 }
 
 .toast-content strong {
@@ -902,7 +917,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(90deg, rgba(13, 24, 19, 0.1), rgba(13, 24, 19, 0.7)), url("../assets/revertpay-editorial.webp") left center / cover no-repeat;
+  background: linear-gradient(90deg, rgba(23, 24, 33, 0.1), rgba(23, 24, 33, 0.7)), url("../assets/revertpay-editorial.webp") left center / cover no-repeat;
   content: "";
   opacity: 0.72;
 }
