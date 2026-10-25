@@ -17,7 +17,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/assets/revertpay-escrow-rail.svg" alt="Animated RevertPay escrow rail: initiated, funded, shipped, and released" width="820" />
+  <img src="docs/assets/revertpay-escrow-rail.svg" alt="Animated RevertPay application map showing buyer, seller and admin roles, every escrow branch, and double-entry money movements" width="1100" />
 </p>
 
 > [!IMPORTANT]
