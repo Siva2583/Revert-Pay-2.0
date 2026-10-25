@@ -1,18 +1,25 @@
 import { useState } from "react";
 import Logo from "./Logo";
 import Icon from "./Icon";
+import Button from "./Button";
+import { PasswordInput } from "./Input";
+import { Alert } from "./Feedback";
 import API from "../services/api";
-import { readResponse } from "../utils/formatters";
+import { apiRequest } from "../services/request";
+import useAsyncAction from "../hooks/useAsyncAction";
 
 function ResetPassword({ token, onBackToLogin }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const { pending, run } = useAsyncAction();
+  const loading = pending !== null;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (pending) return;
+
     setError("");
     setSuccess("");
 
@@ -31,138 +38,52 @@ function ResetPassword({ token, onBackToLogin }) {
       return;
     }
 
-    setLoading(true);
+    await run("reset-password", async () => {
+      try {
+        const data = await apiRequest(API.resetPassword, {
+          method: "POST",
+          body: { token, newPassword: password },
+          fallbackMessage: "Your password could not be reset.",
+        });
 
-    try {
-      const response = await fetch(API.resetPassword, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          newPassword: password,
-        }),
-      });
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        setError(
-          typeof data === "string"
-            ? data
-            : data.message || "Unable to reset your password."
+        setSuccess(
+          typeof data === "string" ? data : data?.message || "Password reset successfully."
         );
-        return;
+        setPassword("");
+        setConfirmPassword("");
+      } catch (resetError) {
+        setError(resetError.message || "Your password could not be reset.");
       }
-
-      setSuccess(
-        typeof data === "string"
-          ? data
-          : data.message || "Password reset successfully."
-      );
-
-      setPassword("");
-      setConfirmPassword("");
-    } catch {
-      setError("Cannot reach the RevertPay server.");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
     <main className="reset-password-shell">
       <section className="reset-password-card">
-        <div className="reset-password-brand">
-          <Logo size={36} />
-          <strong>RevertPay</strong>
-        </div>
-
-        <p className="micro-label">ACCOUNT RECOVERY</p>
-
-        <h1>Choose a new password.</h1>
-
+        <div className="reset-password-brand"><Logo size={38} withWordmark /></div>
+        <span className="reset-password-icon"><Icon name={success ? "checkCircle" : "lock"} size={25} /></span>
+        <p className="eyebrow">Account recovery</p>
+        <h1>{success ? "Password updated" : "Choose a new password"}</h1>
         <p className="reset-password-description">
-          Create a new password to regain access to your RevertPay
-          workspace.
+          {success ? "Your reset was confirmed by the server. You can now return to sign in." : "Create a new password to regain access to your RevertPay workspace."}
         </p>
 
-        {error && (
-          <div className="auth-alert" role="alert">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="auth-alert success" role="status">
-            {success}
-          </div>
-        )}
+        {error && <Alert tone="error" title="Password wasn’t reset"><p>{error}</p></Alert>}
+        {success && <Alert tone="success" title="Password reset complete"><p>{success}</p></Alert>}
 
         {!success && (
-          <form
-            className="auth-form"
-            onSubmit={handleSubmit}
-          >
-            <label htmlFor="new-password">New password</label>
-
-            <input
-              id="new-password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              minLength={8}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-
-            <label htmlFor="confirm-password">
-              Confirm new password
-            </label>
-
-            <input
-              id="confirm-password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Enter your new password again"
-              minLength={8}
-              value={confirmPassword}
-              onChange={(event) =>
-                setConfirmPassword(event.target.value)
-              }
-              required
-            />
-
-            <button
-              className="auth-submit"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? "Resetting..." : "Reset password"}
-              <Icon name="chevron" size={18} />
-            </button>
+          <form className="standard-form" onSubmit={handleSubmit}>
+            <PasswordInput id="new-password" label="New password" autoComplete="new-password" placeholder="At least 8 characters" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} disabled={loading} required />
+            <PasswordInput id="confirm-password" label="Confirm new password" autoComplete="new-password" placeholder="Enter your new password again" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} disabled={loading} required />
+            <Button type="submit" iconAfter="arrowRight" loading={pending === "reset-password"} loadingLabel="Resetting password..." disabled={loading} className="button-full">Reset password</Button>
           </form>
         )}
 
-        {success ? (
-          <button
-            type="button"
-            className="forgot-password-back"
-            onClick={onBackToLogin}
-          >
-            Return to sign in
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="forgot-password-back"
-            onClick={onBackToLogin}
-          >
-            Back to sign in
-          </button>
-        )}
+        <Button variant="ghost" onClick={onBackToLogin} disabled={loading} className="button-full">
+          {success ? "Return to sign in" : "Back to sign in"}
+        </Button>
+
+        <p className="recovery-note"><Icon name="shield" size={15} />Reset tokens are submitted only through the existing recovery request.</p>
       </section>
     </main>
   );

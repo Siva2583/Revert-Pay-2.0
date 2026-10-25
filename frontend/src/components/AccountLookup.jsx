@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
 import AccountSnapshot from "./AccountSnapshot";
 import LedgerTable from "./LedgerTable";
 import API from "../services/api";
-import { readResponse } from "../utils/formatters";
+import { apiRequest } from "../services/request";
+import Button from "./Button";
+import { Input } from "./Input";
+import { Alert, EmptyState } from "./Feedback";
+import { MetricsSkeleton, TableSkeleton } from "./LoadingSpinner";
 
 function AccountLookup({ token, setToast, onLoaded }) {
   const [accountNumber, setAccountNumber] = useState("");
@@ -11,170 +15,189 @@ function AccountLookup({ token, setToast, onLoaded }) {
   const [balance, setBalance] = useState(null);
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
+  const requestRef = useRef({ id: 0, controller: null });
+
+  useEffect(() => {
+    return () => {
+      requestRef.current.id += 1;
+      requestRef.current.controller?.abort();
+    };
+  }, []);
 
   const findAccount = async (event) => {
     event?.preventDefault();
 
-    if (!accountNumber.trim()) {
-      setError("Enter an account number first.");
+    if (loading) return;
+
+    const number = accountNumber.trim();
+
+    if (!number) {
+      setError({
+        title: "Account number required",
+        message: "Enter an account number before searching.",
+      });
       return;
     }
 
+    const requestId = requestRef.current.id + 1;
+    requestRef.current.controller?.abort();
+    const controller = new AbortController();
+    requestRef.current = { id: requestId, controller };
+
     setLoading(true);
-    setError("");
+    setError(null);
     setAccount(null);
+    setBalance(null);
+    setLedger([]);
 
     try {
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
+      const accountData = await apiRequest(API.getAccount(number), {
+        token,
+        signal: controller.signal,
+        fallbackMessage: "The account lookup could not be completed.",
+      });
 
-      const number = accountNumber.trim();
+      if (requestRef.current.id !== requestId) return;
 
-      const accountResponse = await fetch(
-        API.getAccount(number),
-        { headers }
-      );
-
-      if (!accountResponse.ok) {
-        setError(
-          "No account was found with that account number."
-        );
+      if (!accountData) {
+        setError({
+          title: "Account not found",
+          message: `No account was returned for ${number}. Check the number and try again.`,
+        });
         return;
       }
 
-      const accountData =
-        await readResponse(accountResponse);
+      const [balanceData, ledgerData] = await Promise.all([
+        apiRequest(API.getBalance(number), {
+          token,
+          signal: controller.signal,
+          fallbackMessage: "The account balance could not be loaded.",
+        }),
+        apiRequest(API.getLedger(number), {
+          token,
+          signal: controller.signal,
+          fallbackMessage: "The account ledger could not be loaded.",
+        }),
+      ]);
 
-      const [balanceResponse, ledgerResponse] =
-        await Promise.all([
-          fetch(API.getBalance(number), { headers }),
-          fetch(API.getLedger(number), { headers }),
-        ]);
+      if (requestRef.current.id !== requestId) return;
 
-      const balanceData = balanceResponse.ok
-        ? await readResponse(balanceResponse)
-        : 0;
-
-      const ledgerData = ledgerResponse.ok
-        ? await readResponse(ledgerResponse)
-        : [];
+      if (!Array.isArray(ledgerData)) {
+        throw new Error("The ledger response was incomplete. Please try again.");
+      }
 
       setAccount(accountData);
       setBalance(balanceData);
-      setLedger(
-        Array.isArray(ledgerData)
-          ? ledgerData
-          : []
-      );
-
-      onLoaded?.(
-        accountData,
-        balanceData,
-        ledgerData
-      );
+      setLedger(ledgerData);
+      onLoaded?.(accountData, balanceData, ledgerData);
 
       setToast({
         type: "success",
         title: "Account loaded",
-        message: `Ledger data for ${number} is ready.`,
+        message: `Balance and ledger data for ${number} are ready.`,
       });
-    } catch {
-      setError(
-        "Could not connect to the backend server."
-      );
+    } catch (lookupError) {
+      if (
+        lookupError.name === "AbortError" ||
+        requestRef.current.id !== requestId
+      ) {
+        return;
+      }
+
+      setError({
+        title: lookupError.status === 404 ? "Account not found" : "Lookup failed",
+        message:
+          lookupError.status === 404
+            ? `No account was found for ${number}. Check the number and try again.`
+            : lookupError.message || "The account could not be loaded.",
+      });
     } finally {
-      setLoading(false);
+      if (requestRef.current.id === requestId) {
+        setLoading(false);
+      }
     }
   };
 
   return (
-    <div className="lookup-page">
-      <section className="lookup-command">
-        <div className="lookup-icon">
-          <Icon name="search" size={24} />
+    <div className="page-stack">
+      <section className="surface-card lookup-command">
+        <div className="section-heading lookup-heading">
+          <div className="section-heading-with-icon">
+            <span className="section-icon"><Icon name="search" size={21} /></span>
+            <div>
+              <p className="eyebrow">Account explorer</p>
+              <h2>Find a ledger account</h2>
+              <p>Search with the exact account number assigned by RevertPay.</p>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="micro-label">
-            ACCOUNT EXPLORER
-          </p>
-
-          <h2>Inspect a ledger account.</h2>
-
-          <p>
-            Search using the account number assigned by
-            RevertPay.
-          </p>
-        </div>
-
-        <form
-          onSubmit={findAccount}
-          className="lookup-form"
-        >
-          <input
-            placeholder="Example: ACC1001"
+        <form onSubmit={findAccount} className="lookup-form">
+          <Input
+            id="account-lookup-number"
+            label="Account number"
+            hint="For example, use an existing account reference such as ACC1001."
+            placeholder="Enter account number"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
             value={accountNumber}
-            onChange={(e) =>
-              setAccountNumber(e.target.value)
-            }
+            onChange={(event) => setAccountNumber(event.target.value)}
+            disabled={loading}
+            required
           />
-
-          <button disabled={loading}>
-            {loading ? "Searching..." : "Search"}
-          </button>
+          <Button
+            type="submit"
+            icon="search"
+            loading={loading}
+            loadingLabel="Searching..."
+          >
+            Look up account
+          </Button>
         </form>
       </section>
 
       {error && (
-        <div className="page-alert">{error}</div>
+        <Alert tone="error" title={error.title}>
+          <p>{error.message}</p>
+        </Alert>
       )}
 
-      {!account &&
-        !loading &&
-        !error && (
-          <section className="lookup-placeholder">
-            <div className="scanner-line" />
-
-            <Icon name="wallet" size={34} />
-
-            <h3>Ready for account lookup</h3>
-
-            <p>
-              Search an account number to reveal its
-              derived balance, ledger totals, and
-              transaction records.
-            </p>
-          </section>
-        )}
-
-      {account && (
-        <div className="loaded-account">
-          <AccountSnapshot
-            account={account}
-            balance={balance}
-            ledger={ledger}
-          />
-
-          <section className="ledger-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="micro-label">
-                  IMMUTABLE RECORDS
-                </p>
-
-                <h2>Complete ledger history</h2>
-              </div>
-
-              <span className="record-count">
-                {ledger.length} entries
-              </span>
-            </div>
-
-            <LedgerTable ledger={ledger} />
-          </section>
+      {loading && (
+        <div className="page-stack" aria-busy="true">
+          <span className="sr-only">Loading account, balance, and ledger</span>
+          <MetricsSkeleton count={3} />
+          <div className="surface-card"><TableSkeleton rows={5} /></div>
         </div>
+      )}
+
+      {!account && !loading && !error && (
+        <div className="surface-card">
+          <EmptyState
+            icon="wallet"
+            title="Ready for account lookup"
+            description="An account’s derived balance, owner details, and complete ledger history will appear here."
+          />
+        </div>
+      )}
+
+      {account && !loading && (
+        <>
+          <AccountSnapshot account={account} balance={balance} ledger={ledger} />
+
+          <section className="surface-card data-panel">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Immutable records</p>
+                <h2>Complete ledger history</h2>
+                <p>Debit and credit entries for {account.accountNumber}.</p>
+              </div>
+              <span className="record-count">{ledger.length} {ledger.length === 1 ? "entry" : "entries"}</span>
+            </div>
+            <LedgerTable ledger={ledger} token={token} />
+          </section>
+        </>
       )}
     </div>
   );

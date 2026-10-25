@@ -1,204 +1,89 @@
-import { useEffect, useState } from "react";
-import Icon from "./Icon";
+import { useCallback } from "react";
+import AccountSnapshot from "./AccountSnapshot";
 import LedgerTable from "./LedgerTable";
 import API from "../services/api";
-import {
-  formatMoney,
-  readResponse,
-} from "../utils/formatters";
+import { apiRequest } from "../services/request";
+import useResource from "../hooks/useResource";
+import { Alert, EmptyState, ErrorState, RefreshButton } from "./Feedback";
+import { PageSkeleton } from "./LoadingSpinner";
 
 function MyAccount({ token }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const loader = useCallback(async (signal) => {
+    const result = await apiRequest(API.me, {
+      token,
+      signal,
+      fallbackMessage: "Your account could not be loaded.",
+    });
 
-  useEffect(() => {
-    const loadMyAccount = async () => {
-      try {
-        const response = await fetch(API.me, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    if (!result?.account || !Array.isArray(result.ledger)) {
+      throw new Error("The account response was incomplete. Please try again.");
+    }
 
-        const result = await readResponse(response);
-
-        if (!response.ok) {
-          setError(
-            typeof result === "string"
-              ? result
-              : result.message ||
-                "Could not load your account."
-          );
-
-          return;
-        }
-
-        setData(result);
-        console.log("MY ACCOUNT API RESPONSE:", result);
-      } catch {
-        setError(
-          "Could not connect to the backend server."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMyAccount();
+    return result;
   }, [token]);
 
+  const { data, loading, refreshing, error, refresh } = useResource(loader);
+
   if (loading) {
-    return (
-      <div className="lookup-placeholder">
-        <Icon name="wallet" size={34} />
-
-        <h3>Loading your account...</h3>
-
-        <p>
-          Fetching your RevertPay account details.
-        </p>
-      </div>
-    );
+    return <PageSkeleton metrics={3} rows={5} />;
   }
 
-  if (error) {
+  if (error && !data) {
     return (
-      <div className="page-alert">{error}</div>
+      <ErrorState
+        title="Your account is unavailable"
+        description={error}
+        onRetry={refresh}
+        retrying={refreshing}
+      />
     );
   }
 
   if (!data) {
-    return null;
+    return (
+      <EmptyState
+        icon="wallet"
+        title="No account information returned"
+        description="The server did not return an account profile for this session."
+      />
+    );
   }
 
-  const account = data.account;
-  const ledger = data.ledger || [];
-
-  const credits = ledger
-    .filter((entry) => entry.type === "CREDIT")
-    .reduce(
-      (sum, entry) => sum + Number(entry.amount || 0),
-      0
-    );
-
-  const debits = ledger
-    .filter((entry) => entry.type === "DEBIT")
-    .reduce(
-      (sum, entry) => sum + Number(entry.amount || 0),
-      0
-    );
+  const { account, ledger } = data;
 
   return (
-    <div className="loaded-account">
-      <section className="account-banner">
-        <div className="account-identity">
-          <p>MY REVERTPAY PROFILE</p>
-
-          <h2>{data.name}</h2>
-
-          <div className="account-tags">
-            <span>User ID · {data.userId}</span>
-            <span>{data.role}</span>
-          </div>
+    <div className="page-stack">
+      <div className="section-heading standalone-heading">
+        <div>
+          <p className="eyebrow">Account workspace</p>
+          <h2>Account summary</h2>
+          <p>Review your current profile and ledger-derived financial position.</p>
         </div>
+        <RefreshButton refreshing={refreshing} onClick={refresh} />
+      </div>
 
-        <div className="balance-figure">
-          <span>DERIVED BALANCE</span>
+      {error && (
+        <Alert tone="warning" title="Couldn’t refresh account data">
+          <p>{error} The last loaded information remains visible.</p>
+        </Alert>
+      )}
 
-          <strong>
-            {formatMoney(data.balance)}
-          </strong>
+      <AccountSnapshot
+        account={account}
+        balance={data.balance}
+        ledger={ledger}
+        profile={data}
+      />
 
-          <small>
-            Calculated from ledger entries
-          </small>
-        </div>
-      </section>
-
-      <section className="metric-row">
-        <div className="metric-card neutral-card">
-          <span>Account ID</span>
-
-          <strong>{account.id}</strong>
-
-          <small>
-            RevertPay account identifier
-          </small>
-        </div>
-
-        <div className="metric-card credit-card">
-          <span>Account Number</span>
-
-          <strong>
-            {account.accountNumber}
-          </strong>
-
-          <small>
-            Assigned ledger account
-          </small>
-        </div>
-
-        <div className="metric-card neutral-card">
-          <span>Owner ID</span>
-
-          <strong>{account.ownerId}</strong>
-
-          <small>Account owner</small>
-        </div>
-      </section>
-
-      <section className="metric-row">
-        <div className="metric-card credit-card">
-          <span>Incoming credits</span>
-
-          <strong>
-            {formatMoney(credits)}
-          </strong>
-
-          <small>
-            All recorded CREDIT entries
-          </small>
-        </div>
-
-        <div className="metric-card debit-card">
-          <span>Outgoing debits</span>
-
-          <strong>
-            {formatMoney(debits)}
-          </strong>
-
-          <small>
-            All recorded DEBIT entries
-          </small>
-        </div>
-
-        <div className="metric-card neutral-card">
-          <span>Ledger records</span>
-
-          <strong>{ledger.length}</strong>
-
-          <small>
-            Immutable transaction entries
-          </small>
-        </div>
-      </section>
-
-      <section className="ledger-panel">
-        <div className="panel-heading">
+      <section className="surface-card data-panel">
+        <div className="section-heading">
           <div>
-            <p className="micro-label">
-              IMMUTABLE RECORDS
-            </p>
-
+            <p className="eyebrow">Immutable records</p>
             <h2>My ledger history</h2>
+            <p>Every debit and credit associated with your account.</p>
           </div>
-
-          <span className="record-count">
-            {ledger.length} entries
-          </span>
+          <span className="record-count">{ledger.length} {ledger.length === 1 ? "entry" : "entries"}</span>
         </div>
-
         <LedgerTable ledger={ledger} token={token} />
       </section>
     </div>

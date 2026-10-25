@@ -1,16 +1,39 @@
-# React + Vite
+# RevertPay frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite frontend for the RevertPay escrow and ledger workspace.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```sh
+npm ci
+npm run dev
+```
 
-## React Compiler
+The development server proxies `/api` requests to the existing Spring Boot backend at `http://localhost:8080`. Authentication continues to use the existing JWT and local-storage behavior.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quality checks
 
-## Expanding the ESLint configuration
+```sh
+npm run lint
+npm run test:render
+npm run build
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`test:render` is a dependency-free server-render smoke check for the active screen components. It does not replace browser or backend integration testing.
+
+## Structure
+
+- `src/App.jsx` — existing state-based page navigation and session handling
+- `src/components/` — screens and shared UI primitives
+- `src/hooks/` — request lifecycle and duplicate-submission protection
+- `src/services/` — existing API paths and native-fetch request helper
+- `src/utils/` — formatting, role, navigation, and escrow helpers
+- `src/index.css` — design tokens, local font stacks, and global foundation
+- `src/App.css` — shared component and responsive styles
+- `src/styles/editorial.css` — editorial authentication and shared art direction
+- `src/styles/workspace.css` — authenticated dashboard, navigation, and financial workflow design
+- `src/assets/` — optimized local editorial artwork
+
+Manrope and IBM Plex Mono are served locally through Fontsource; the interface does not depend on a third-party font CDN.
+
+No API paths, authentication semantics, backend files, or financial business rules are changed by the frontend design system.
