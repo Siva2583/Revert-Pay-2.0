@@ -7,32 +7,30 @@
     buyer–seller coordination, dispute resolution, and auditable financial records.
   </p>
   <p>
-    <a href="https://www.oracle.com/java/"><img alt="Java 25" src="https://img.shields.io/badge/Java-25-080B09?style=for-the-badge&amp;logo=openjdk&amp;logoColor=00C853" /></a>
-    <a href="https://spring.io/projects/spring-boot"><img alt="Spring Boot 4.1.1" src="https://img.shields.io/badge/Spring_Boot-4.1.1-080B09?style=for-the-badge&amp;logo=springboot&amp;logoColor=00C853" /></a>
-    <a href="https://react.dev/"><img alt="React 19" src="https://img.shields.io/badge/React-19-080B09?style=for-the-badge&amp;logo=react&amp;logoColor=00C853" /></a>
-    <a href="https://www.postgresql.org/"><img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Database-080B09?style=for-the-badge&amp;logo=postgresql&amp;logoColor=C6A15B" /></a>
-    <a href="#backend-test-inventory"><img alt="22 backend tests" src="https://img.shields.io/badge/Backend_Tests-22-080B09?style=for-the-badge&amp;logo=junit5&amp;logoColor=00C853" /></a>
-    <a href="#frontend-quality-checks"><img alt="22 frontend render checks" src="https://img.shields.io/badge/Render_Checks-22-080B09?style=for-the-badge&amp;logo=vite&amp;logoColor=C6A15B" /></a>
+    <a href="https://www.oracle.com/java/"><img alt="Java 25" src="https://img.shields.io/badge/Java-25-080B09?style=flat-square&amp;logo=openjdk&amp;logoColor=00C853" /></a>
+    <a href="https://spring.io/projects/spring-boot"><img alt="Spring Boot 4.1.1" src="https://img.shields.io/badge/Spring_Boot-4.1.1-080B09?style=flat-square&amp;logo=springboot&amp;logoColor=00C853" /></a>
+    <a href="https://react.dev/"><img alt="React 19" src="https://img.shields.io/badge/React-19-080B09?style=flat-square&amp;logo=react&amp;logoColor=00C853" /></a>
+    <a href="https://www.postgresql.org/"><img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Database-080B09?style=flat-square&amp;logo=postgresql&amp;logoColor=C6A15B" /></a>
+    <a href="#backend-test-inventory"><img alt="22 backend tests" src="https://img.shields.io/badge/Backend_Tests-22-080B09?style=flat-square&amp;logo=junit5&amp;logoColor=00C853" /></a>
+    <a href="#frontend-quality-checks"><img alt="22 frontend render checks" src="https://img.shields.io/badge/Render_Checks-22-080B09?style=flat-square&amp;logo=vite&amp;logoColor=C6A15B" /></a>
   </p>
 </div>
+
+<p align="center">
+  <img src="docs/assets/revertpay-escrow-rail.svg" alt="Animated RevertPay escrow rail: initiated, funded, shipped, and released" width="820" />
+</p>
 
 > [!IMPORTANT]
 > RevertPay is an educational full-stack project. It models escrow workflows and internal ledger movements; it is **not connected to banks, card networks, or a live payment gateway**. The current timings and demo-funding behavior are intended for development and demonstration, not production finance.
 
 ## Table of contents
 
-- [Overview](#overview)
-- [Feature highlights](#feature-highlights)
-- [Architecture](#architecture)
-- [Escrow lifecycle](#escrow-lifecycle)
-- [Roles and permissions](#roles-and-permissions)
-- [Security design](#security-design)
-- [Frontend experience](#frontend-experience)
-- [Getting started](#getting-started)
-- [Core API surface](#core-api-surface)
-- [Testing and financial invariants](#testing-and-financial-invariants)
-- [Project structure](#project-structure)
-- [Production hardening](#production-hardening)
+| Product | Platform | Reference |
+|---|---|---|
+| [Overview](#overview) | [Architecture](#architecture) | [Getting started](#getting-started) |
+| [Feature highlights](#feature-highlights) | [Escrow lifecycle](#escrow-lifecycle) | [Core API surface](#core-api-surface) |
+| [Roles and permissions](#roles-and-permissions) | [Security design](#security-design) | [Testing and financial invariants](#testing-and-financial-invariants) |
+| [Frontend experience](#frontend-experience) | [Project structure](#project-structure) | [Production hardening](#production-hardening) |
 
 ## Overview
 
@@ -46,6 +44,12 @@ The project goes beyond a CRUD dashboard. Its core engineering concerns are:
 - **Idempotency** — retrying an initiation request must not create a second escrow.
 - **Authorization** — roles and resource ownership are enforced on the server.
 - **Auditability** — ledger movements and escrow status transitions can be inspected together.
+
+### Engineering at a glance
+
+| **22** | **26** | **50** |
+|:---:|:---:|:---:|
+| Active backend tests | Covered financial behaviors | Coordinated release attempts |
 
 ## Feature highlights
 
@@ -86,6 +90,7 @@ The project goes beyond a CRUD dashboard. Its core engineering concerns are:
 ## Architecture
 
 ```mermaid
+%%{init: {"theme":"dark", "themeVariables":{"fontFamily":"Inter, Segoe UI, sans-serif", "fontSize":"14px", "lineColor":"#C6A15B", "clusterBkg":"#0D130F", "clusterBorder":"#2A3A30", "textColor":"#E8F0EA"}}}%%
 flowchart LR
     subgraph Client["Browser"]
         UI["React 19 + Vite<br/>Role-aware financial workspace"]
@@ -110,6 +115,17 @@ flowchart LR
     Ledger --> DB
     Security --> DB
     Security --> Mail
+
+    classDef client fill:#10251A,stroke:#00C853,color:#F4F7F5,stroke-width:1.5px;
+    classDef service fill:#111814,stroke:#3C5B47,color:#F4F7F5,stroke-width:1.2px;
+    classDef ledger fill:#211B11,stroke:#C6A15B,color:#F4F7F5,stroke-width:1.5px;
+    classDef datastore fill:#101614,stroke:#C6A15B,color:#F4F7F5,stroke-width:1.5px;
+    classDef external fill:#161816,stroke:#6E756F,color:#F4F7F5,stroke-width:1.2px;
+    class UI client;
+    class Security,Escrow,Jobs service;
+    class Ledger ledger;
+    class DB datastore;
+    class Mail external;
 ```
 
 ### Technology stack
@@ -138,6 +154,7 @@ flowchart LR
 ## Escrow lifecycle
 
 ```mermaid
+%%{init: {"theme":"dark", "themeVariables":{"fontFamily":"Inter, Segoe UI, sans-serif", "background":"#080B09", "primaryColor":"#10251A", "primaryTextColor":"#F4F7F5", "primaryBorderColor":"#00C853", "lineColor":"#C6A15B", "secondaryColor":"#211B11", "tertiaryColor":"#0D130F", "textColor":"#E8F0EA", "stateBkg":"#10251A", "stateBorder":"#00C853", "stateLabelColor":"#F4F7F5", "transitionColor":"#C6A15B", "transitionLabelColor":"#E8F0EA"}}}%%
 stateDiagram-v2
     [*] --> PAYMENT_INITIATED
     PAYMENT_INITIATED --> CREATED: Buyer confirms within 40 seconds
@@ -501,6 +518,8 @@ Revert-Pay-2.0/
 │       │   │   └── user/          # Authentication and password recovery
 │       │   └── resources/application.properties
 │       └── test/java/com/revertpay/
+├── docs/
+│   └── assets/               # Lightweight, reduced-motion-aware README artwork
 ├── frontend/
 │   ├── scripts/render-smoke.mjs
 │   ├── src/
