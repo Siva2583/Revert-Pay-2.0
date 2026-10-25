@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/src/assets/revertpay-editorial.webp" alt="RevertPay emerald and antique-gold editorial artwork" width="960" />
+  <img src="frontend/src/assets/revertpay-editorial.webp" alt="RevertPay emerald and antique-gold editorial artwork" width="96" height="96" />
   <h1>RevertPay</h1>
   <p><strong>Money moves. Proof stays.</strong></p>
   <p>
