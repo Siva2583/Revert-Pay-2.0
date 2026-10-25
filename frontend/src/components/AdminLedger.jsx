@@ -1,270 +1,109 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import Icon from "./Icon";
-import TransactionDetailsModal from "./TransactionDetailsModal";
-import {
-  formatMoney,
-  formatDate,
-  readResponse,
-} from "../utils/formatters";
+import LedgerTable from "./LedgerTable";
+import API from "../services/api";
+import { apiRequest } from "../services/request";
+import useResource from "../hooks/useResource";
+import { formatMoney } from "../utils/formatters";
+import { Alert, EmptyState, ErrorState, RefreshButton } from "./Feedback";
+import { PageSkeleton } from "./LoadingSpinner";
 
 function AdminLedger({ token }) {
-  const [ledger, setLedger] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const loader = useCallback(async (signal) => {
+    const result = await apiRequest(API.adminLedger, {
+      token,
+      signal,
+      fallbackMessage: "The system ledger could not be loaded.",
+    });
 
-  const [selectedEntry, setSelectedEntry] = useState(null);
-  const [transaction, setTransaction] = useState(null);
-  const [detailsLoading, setDetailsLoading] = useState(false);
-  const [detailsError, setDetailsError] = useState("");
-
-  const loadLedger = useCallback(
-    async (isRefresh = false) => {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      setError("");
-
-      try {
-        const response = await fetch("/api/admin/ledger/holding", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await readResponse(response);
-
-        if (!response.ok) {
-          throw new Error(
-            data?.message ||
-              data?.error ||
-              "Unable to load system ledger."
-          );
-        }
-
-        setLedger(data);
-      } catch (err) {
-        setError(err.message || "Unable to load system ledger.");
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token]
-  );
-
-  useEffect(() => {
-    loadLedger();
-  }, [loadLedger]);
-
-  const openTransactionDetails = async (entry) => {
-    setSelectedEntry(entry);
-    setTransaction(null);
-    setDetailsError("");
-    setDetailsLoading(true);
-
-    try {
-      const response = await fetch(
-        `/api/escrow/${entry.reference_id}/ledger-details`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            "No escrow transaction details were found for this entry."
-        );
-      }
-
-      setTransaction(data);
-    } catch (err) {
-      setDetailsError(
-        err.message || "Unable to load transaction details."
-      );
-    } finally {
-      setDetailsLoading(false);
+    if (!result || !Array.isArray(result.recentEntries)) {
+      throw new Error("The system ledger response was incomplete. Please try again.");
     }
-  };
 
-  const closeTransactionDetails = () => {
-    setSelectedEntry(null);
-    setTransaction(null);
-    setDetailsError("");
-    setDetailsLoading(false);
-  };
+    return result;
+  }, [token]);
 
-  const entries = ledger?.recentEntries || [];
+  const { data: ledger, loading, refreshing, error, refresh } = useResource(loader);
+
+  if (loading) return <PageSkeleton metrics={4} rows={6} />;
+
+  if (error && !ledger) {
+    return (
+      <ErrorState
+        title="System ledger unavailable"
+        description={error}
+        onRetry={refresh}
+        retrying={refreshing}
+      />
+    );
+  }
+
+  if (!ledger) {
+    return (
+      <EmptyState
+        icon="book"
+        title="No ledger information returned"
+        description="The server did not return holding-account information."
+      />
+    );
+  }
+
+  const entries = ledger.recentEntries;
 
   return (
-    <section className="admin-ledger-page">
-      <div className="page-heading">
+    <div className="page-stack">
+      <div className="section-heading standalone-heading">
         <div>
-          <span className="eyebrow">ADMIN WORKSPACE</span>
-          <h1>System Ledger</h1>
-          <p>
-            Monitor the escrow holding account and its ledger activity.
-          </p>
+          <p className="eyebrow">Administrative ledger</p>
+          <h2>Holding account activity</h2>
+          <p>Operational totals and the most recent escrow holding-account entries.</p>
         </div>
-
-        <button
-          className="secondary-button"
-          onClick={() => loadLedger(true)}
-          disabled={loading || refreshing}
-        >
-          <Icon name="activity" />
-          {refreshing ? "Refreshing..." : "Refresh Ledger"}
-        </button>
+        <RefreshButton refreshing={refreshing} onClick={refresh} label="Refresh ledger" />
       </div>
 
       {error && (
-        <div className="ledger-error" role="alert">
-          <strong>Unable to load ledger</strong>
-          <p>{error}</p>
-
-          <button
-            className="secondary-button"
-            onClick={() => loadLedger(true)}
-            disabled={refreshing}
-          >
-            Try again
-          </button>
-        </div>
+        <Alert tone="warning" title="Couldn’t refresh the ledger">
+          <p>{error} The last loaded ledger remains visible.</p>
+        </Alert>
       )}
 
-      {loading ? (
-        <div className="ledger-state">Loading system ledger...</div>
-      ) : ledger ? (
-        <>
-          <section className="ledger-summary">
-            <article className="ledger-stat">
-              <span className="ledger-stat-label">HOLDING ACCOUNT</span>
-              <h2>{ledger.accountNumber}</h2>
-              <p>Account ID: {ledger.accountId}</p>
-            </article>
+      <section className="metrics-grid" aria-label="System ledger summary">
+        <article className="metric-card">
+          <div className="metric-card-top"><span className="metric-label">Holding account</span><span className="metric-icon"><Icon name="wallet" size={18} /></span></div>
+          <strong className="metric-value metric-account-number">{ledger.accountNumber || "—"}</strong>
+          <p>Account ID: {ledger.accountId ?? "—"}</p>
+        </article>
+        <article className="metric-card metric-card-emphasis">
+          <div className="metric-card-top"><span className="metric-label">Current balance</span><span className="metric-icon metric-icon-success"><Icon name="activity" size={18} /></span></div>
+          <strong className="metric-value">{formatMoney(ledger.balance)}</strong>
+          <p>Calculated from ledger entries</p>
+        </article>
+        <article className="metric-card">
+          <div className="metric-card-top"><span className="metric-label">Total credits</span><span className="metric-icon metric-icon-success"><Icon name="arrowDownLeft" size={18} /></span></div>
+          <strong className="metric-value">{formatMoney(ledger.totalCredits)}</strong>
+          <p>Recorded holding-account credits</p>
+        </article>
+        <article className="metric-card">
+          <div className="metric-card-top"><span className="metric-label">Total debits</span><span className="metric-icon"><Icon name="arrowUpRight" size={18} /></span></div>
+          <strong className="metric-value">{formatMoney(ledger.totalDebits)}</strong>
+          <p>Recorded holding-account debits</p>
+        </article>
+      </section>
 
-            <article className="ledger-stat">
-              <span className="ledger-stat-label">CURRENT BALANCE</span>
-              <h2>{formatMoney(ledger.balance)}</h2>
-              <p>Calculated from ledger entries</p>
-            </article>
-
-            <article className="ledger-stat">
-              <span className="ledger-stat-label">TOTAL CREDITS</span>
-              <h2>{formatMoney(ledger.totalCredits)}</h2>
-              <p>Total recorded credits</p>
-            </article>
-
-            <article className="ledger-stat">
-              <span className="ledger-stat-label">TOTAL DEBITS</span>
-              <h2>{formatMoney(ledger.totalDebits)}</h2>
-              <p>Total recorded debits</p>
-            </article>
-          </section>
-
-          <section className="ledger-table-card">
-            <div className="ledger-table-heading">
-              <div>
-                <h2>Recent Ledger Entries</h2>
-                <p>
-                  Showing {entries.length} recent entries out of{" "}
-                  {ledger.totalEntries ?? entries.length} total entries.
-                </p>
-                <p>Select an entry to inspect its escrow transaction.</p>
-              </div>
-            </div>
-
-            {entries.length === 0 ? (
-              <div className="ledger-state">
-                No ledger entries are available.
-              </div>
-            ) : (
-              <div className="ledger-table-wrapper">
-                <table className="ledger-table">
-                  <thead>
-                    <tr>
-                      <th>Entry ID</th>
-                      <th>Type</th>
-                      <th>Amount</th>
-                      <th>Reference ID</th>
-                      <th>Created</th>
-                      <th>Details</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {entries.map((entry) => (
-                      <tr key={entry.entry_id}>
-                        <td className="ledger-entry-id">
-                          {entry.entry_id}
-                        </td>
-
-                        <td>
-                          <span
-                            className={`ledger-type ${
-                              String(entry.type).toUpperCase() === "CREDIT"
-                                ? "ledger-type-credit"
-                                : "ledger-type-debit"
-                            }`}
-                          >
-                            {entry.type}
-                          </span>
-                        </td>
-
-                        <td className="ledger-amount">
-                          {formatMoney(entry.amount)}
-                        </td>
-
-                        <td>{entry.reference_id ?? "—"}</td>
-                        <td>{formatDate(entry.createdAt)}</td>
-
-                        <td>
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => openTransactionDetails(entry)}
-                          >
-                            View transaction
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </>
-      ) : (
-        !error && (
-          <div className="ledger-state">
-            No ledger information is available.
+      <section className="surface-card data-panel">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">System records</p>
+            <h2>Recent ledger entries</h2>
+            <p>
+              Showing {entries.length} recent {entries.length === 1 ? "entry" : "entries"} out of {ledger.totalEntries ?? entries.length} total.
+            </p>
           </div>
-        )
-      )}
-
-      <TransactionDetailsModal
-        selectedEntry={selectedEntry}
-        transaction={transaction}
-        loading={detailsLoading}
-        error={detailsError}
-        onClose={closeTransactionDetails}
-        onRetry={() => {
-          if (selectedEntry) {
-            openTransactionDetails(selectedEntry);
-          }
-        }}
-      />
-    </section>
+          <span className="record-count"><Icon name="lock" size={13} />Immutable records</span>
+        </div>
+        <LedgerTable ledger={entries} token={token} />
+      </section>
+    </div>
   );
 }
 

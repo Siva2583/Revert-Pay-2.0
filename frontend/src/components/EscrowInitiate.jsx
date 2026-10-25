@@ -1,484 +1,295 @@
 import { useRef, useState } from "react";
 import Icon from "./Icon";
 import API from "../services/api";
-import {
-  formatMoney,
-  readResponse,
-} from "../utils/formatters";
+import { apiRequest } from "../services/request";
+import useAsyncAction from "../hooks/useAsyncAction";
+import { formatMoney } from "../utils/formatters";
+import Button from "./Button";
+import { Input } from "./Input";
+import { Alert, StatusBadge } from "./Feedback";
+import EscrowLifecycle from "./EscrowLifecycle";
+import { ConfirmDialog } from "./Modal";
 
-function EscrowInitiate({ token, setToast }) {
-  const [sellerAccountNumber, setSellerAccountNumber] =
-    useState("");
+const actionFeedback = {
+  confirm: {
+    title: "Payment confirmed",
+    message: "The escrow is confirmed and ready to be funded.",
+  },
+  cancel: {
+    title: "Payment declined",
+    message: "The initiated escrow payment was cancelled.",
+  },
+  fund: {
+    title: "Escrow funded",
+    message: "The payment is now held in escrow.",
+  },
+};
 
+function EscrowInitiate({ token, setToast, setPage }) {
+  const [sellerAccountNumber, setSellerAccountNumber] = useState("");
   const [itemName, setItemName] = useState("");
   const [amount, setAmount] = useState("");
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-
-  // Reuse the same key when retrying the same request.
-  const idempotencyKeyRef = useRef(null);
+  const [error, setError] = useState("");
+  const [confirmation, setConfirmation] = useState(null);
+  const idempotencyRef = useRef({ fingerprint: null, key: null });
+  const { pending, run } = useAsyncAction();
+  const loading = pending !== null;
 
   const submit = async (event) => {
     event.preventDefault();
+    if (pending) return;
 
-    setLoading(true);
-    setResult(null);
+    const payload = {
+      sellerAccountNumber: sellerAccountNumber.trim(),
+      itemName: itemName.trim(),
+      amount: Number(amount),
+    };
+    const fingerprint = JSON.stringify(payload);
 
-    if (!idempotencyKeyRef.current) {
-      idempotencyKeyRef.current = crypto.randomUUID();
+    if (idempotencyRef.current.fingerprint !== fingerprint) {
+      idempotencyRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+      };
     }
 
-    try {
-      const response = await fetch(
-        API.escrowInitiate,
-        {
+    await run("initiate", async () => {
+      setError("");
+      setResult(null);
+
+      try {
+        const data = await apiRequest(API.escrowInitiate, {
+          token,
           method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            "Idempotency-Key": idempotencyKeyRef.current,
-          },
-
-          body: JSON.stringify({
-            sellerAccountNumber:
-              sellerAccountNumber.trim(),
-
-            itemName: itemName.trim(),
-
-            amount: Number(amount),
-          }),
-        }
-      );
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        setToast({
-          type: "error",
-          title: "Escrow initiation failed",
-          message:
-            typeof data === "string"
-              ? data
-              : data.message ||
-                "The escrow request could not be initiated.",
+          headers: { "Idempotency-Key": idempotencyRef.current.key },
+          body: payload,
+          fallbackMessage: "The escrow request could not be initiated.",
         });
 
-        return;
+        setResult(data);
+        idempotencyRef.current = { fingerprint: null, key: null };
+        setSellerAccountNumber("");
+        setItemName("");
+        setAmount("");
+        setToast({
+          type: "success",
+          title: "Payment initiated",
+          message: "Review the seller, item, and amount before confirming.",
+        });
+      } catch (initiateError) {
+        setError(initiateError.message || "The escrow request could not be initiated.");
       }
-
-      setResult(data);
-
-      // Successful initiation: prepare for a new operation.
-      idempotencyKeyRef.current = null;
-
-      setToast({
-        type: "success",
-        title: "Payment initiated",
-        message:
-          "Review the seller, item, and amount before confirming.",
-      });
-
-      setSellerAccountNumber("");
-      setItemName("");
-      setAmount("");
-    } catch {
-      setToast({
-        type: "error",
-        title: "Connection failed",
-        message:
-          "Cannot reach the backend server.",
-      });
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
-  // CONFIRM PAYMENT
-  const confirmEscrow = async () => {
-    if (!result) return;
+  const performAction = async (action) => {
+    if (!result || pending) return;
 
-    setLoading(true);
+    const escrowId = result.escrowId ?? result.escrowid;
 
-    try {
-      const response = await fetch(
-        `/api/escrow/${result.escrowid}/confirm`,
-        {
+    await run(`escrow-${action}`, async () => {
+      setError("");
+
+      try {
+        const data = await apiRequest(API.escrowAction(escrowId, action), {
+          token,
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        setToast({
-          type: "error",
-          title: "Confirmation failed",
-          message:
-            typeof data === "string"
-              ? data
-              : data.message ||
-                "The escrow could not be confirmed.",
+          fallbackMessage: "The escrow action could not be completed.",
         });
 
-        return;
-      }
-
-      setResult(data);
-
-      setToast({
-        type: "success",
-        title: "Payment confirmed",
-        message:
-          "The escrow is now ready to be funded.",
-      });
-    } catch {
-      setToast({
-        type: "error",
-        title: "Connection failed",
-        message:
-          "Cannot reach the backend server.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // DECLINE PAYMENT
-  const cancelEscrow = async () => {
-    if (!result) return;
-
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `/api/escrow/${result.escrowid}/cancel`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        if (!data) {
+          setConfirmation(null);
+          setError("The action was accepted, but updated escrow details were not returned. Open My escrows to retrieve the current state.");
+          return;
         }
-      );
 
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        setToast({
-          type: "error",
-          title: "Decline failed",
-          message:
-            typeof data === "string"
-              ? data
-              : data.message ||
-                "The escrow could not be declined.",
-        });
-
-        return;
+        setResult(data);
+        setConfirmation(null);
+        setToast({ type: "success", ...actionFeedback[action] });
+      } catch (actionError) {
+        setConfirmation(null);
+        setError(actionError.message || "The escrow action could not be completed.");
       }
-
-      setResult(data);
-
-      setToast({
-        type: "success",
-        title: "Payment declined",
-        message:
-          "The escrow payment has been cancelled.",
-      });
-    } catch {
-      setToast({
-        type: "error",
-        title: "Connection failed",
-        message:
-          "Cannot reach the backend server.",
-      });
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
-  // FUND ESCROW
-  const fundEscrow = async () => {
-    if (!result) return;
-
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `/api/escrow/${result.escrowid}/fund`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        setToast({
-          type: "error",
-          title: "Funding failed",
-          message:
-            typeof data === "string"
-              ? data
-              : data.message ||
-                "The escrow could not be funded.",
-        });
-
-        return;
-      }
-
-      setResult(data);
-
-      setToast({
-        type: "success",
-        title: "Escrow funded",
-        message:
-          "The payment has been moved into escrow.",
-      });
-    } catch {
-      setToast({
-        type: "error",
-        title: "Connection failed",
-        message:
-          "Cannot reach the backend server.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const escrowId = result?.escrowId ?? result?.escrowid;
+  const sellerName = result?.sellerName || result?.sellername || "—";
 
   return (
-    <div className="create-layout">
-      <section className="create-intro">
-        <p className="micro-label">
-          ESCROW PAYMENT
-        </p>
-
-        <h2>
-          Review a payment before funding.
-        </h2>
-
-        <p>
-          Start an escrow transaction by selecting the
-          seller, item, and amount. The payment remains
-          in PAYMENT_INITIATED until the buyer confirms
-          or declines it.
-        </p>
-
-        <div className="creation-rules">
+    <div className="form-layout escrow-initiate-layout">
+      <section className="surface-card form-card">
+        <div className="section-heading">
           <div>
-            <span>01</span>
-
-            <p>
-              <strong>Authenticated buyer</strong>
-
-              <small>
-                Your buyer identity comes from the JWT
-                session.
-              </small>
-            </p>
+            <p className="eyebrow">New escrow · Step 1</p>
+            <h2>Payment details</h2>
+            <p>Identify the seller and item, then review the initiated payment before funding.</p>
           </div>
-
-          <div>
-            <span>02</span>
-
-            <p>
-              <strong>Seller verification</strong>
-
-              <small>
-                The selected user must have the SELLER
-                role.
-              </small>
-            </p>
-          </div>
-
-          <div>
-            <span>03</span>
-
-            <p>
-              <strong>
-                Review before confirmation
-              </strong>
-
-              <small>
-                No funds move while the payment is
-                initiated.
-              </small>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="create-form-card">
-        <div className="panel-heading">
-          <div>
-            <p className="micro-label">
-              NEW ESCROW
-            </p>
-
-            <h2>Initiate payment</h2>
-          </div>
-
-          <div className="form-badge">
-            STEP 01
-          </div>
+          <span className="section-icon"><Icon name="shield" size={21} /></span>
         </div>
 
-        <form onSubmit={submit}>
-          <label>Seller account number</label>
-
-          <input
-            placeholder="Example: ACC21"
-            value={sellerAccountNumber}
-            onChange={(e) =>
-              setSellerAccountNumber(
-                e.target.value.toUpperCase()
-              )
-            }
-            required
-          />
-
-          <label>Item name</label>
-
-          <input
-            type="text"
-            placeholder="Example: iPhone 15"
-            value={itemName}
-            onChange={(e) =>
-              setItemName(e.target.value)
-            }
-            required
-          />
-
-          <label>Payment amount</label>
-
-          <div className="amount-input">
-            <span>₹</span>
-
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) =>
-                setAmount(e.target.value)
-              }
-              required
-            />
-          </div>
-
-          <button
-            className="form-submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Initiating payment..."
-              : "Initiate escrow payment"}
-
-            <Icon name="shield" size={18} />
-          </button>
-        </form>
-
-        {result && (
-          <div className="page-alert">
-            <strong>
-              {result.status === "PAYMENT_INITIATED"
-                ? "Payment initiated"
-                : result.status === "CREATED"
-                ? "Payment confirmed"
-                : result.status === "FUNDED"
-                ? "Escrow funded"
-                : result.status === "CANCELLED"
-                ? "Payment cancelled"
-                : result.status === "EXPIRED"
-                ? "Payment expired"
-                : "Escrow update"}
-            </strong>
-
-            <br />
-
-            Seller:{" "}
-            {result.sellerName ||
-              result.sellername ||
-              "—"}
-
-            <br />
-
-            Item: {result.itemName || "—"}
-
-            <br />
-
-            Amount: {formatMoney(result.amount)}
-
-            <br />
-
-            Status: {result.status || "—"}
-
-            <br />
-
-            Escrow ID:{" "}
-            {result.escrowId ||
-              result.escrowid ||
-              "—"}
-
-            {result.status === "PAYMENT_INITIATED" && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  marginTop: "16px",
-                }}
-              >
-                <button
-                  className="form-submit"
-                  onClick={confirmEscrow}
-                  disabled={loading}
-                >
-                  {loading
-                    ? "Confirming..."
-                    : "Confirm Payment"}
-
-                  <Icon name="shield" size={18} />
-                </button>
-
-                <button
-                  className="form-submit"
-                  onClick={cancelEscrow}
-                  disabled={loading}
-                >
-                  {loading
-                    ? "Declining..."
-                    : "Decline Payment"}
-
-                  <Icon name="close" size={18} />
-                </button>
-              </div>
-            )}
-
-            {result.status === "CREATED" && (
-              <button
-                className="form-submit"
-                onClick={fundEscrow}
-                disabled={loading}
-                style={{ marginTop: "16px" }}
-              >
-                {loading
-                  ? "Funding..."
-                  : "Fund Escrow"}
-
-                <Icon name="shield" size={18} />
-              </button>
-            )}
-          </div>
+        {error && (
+          <Alert tone="error" title="Escrow action needs attention">
+            <p>{error}</p>
+          </Alert>
         )}
+
+        <form onSubmit={submit} className="standard-form">
+          <Input
+            id="escrow-seller-account"
+            label="Seller account number"
+            placeholder="Example: ACC21"
+            hint="The backend verifies that this account belongs to a seller."
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            value={sellerAccountNumber}
+            onChange={(event) => setSellerAccountNumber(event.target.value.toUpperCase())}
+            disabled={loading}
+            required
+          />
+          <Input
+            id="escrow-item-name"
+            label="Item name"
+            placeholder="What is being purchased?"
+            value={itemName}
+            onChange={(event) => setItemName(event.target.value)}
+            disabled={loading}
+            required
+          />
+          <Input
+            id="escrow-payment-amount"
+            label="Payment amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            inputMode="decimal"
+            prefix="₹"
+            placeholder="0.00"
+            hint="Enter the exact payment amount in INR."
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            disabled={loading}
+            required
+          />
+          <div className="form-actions">
+            <Button
+              type="submit"
+              icon="shield"
+              loading={pending === "initiate"}
+              loadingLabel="Initiating payment..."
+              disabled={loading}
+            >
+              Initiate escrow payment
+            </Button>
+          </div>
+        </form>
       </section>
+
+      <aside className="guidance-panel escrow-guidance">
+        <p className="eyebrow">Protected by process</p>
+        <h2>Review first. Fund second.</h2>
+        <p>Initiation creates a reviewable request. It does not move funds.</p>
+        <ol className="guidance-list">
+          <li><span>01</span><div><strong>Initiate</strong><p>Seller, item, and amount are recorded.</p></div></li>
+          <li><span>02</span><div><strong>Confirm</strong><p>Review the server-returned payment details.</p></div></li>
+          <li><span>03</span><div><strong>Fund</strong><p>Only after confirmation can funds move into escrow.</p></div></li>
+        </ol>
+        <div className="guidance-note"><Icon name="lock" size={18} /><p>Your buyer identity continues to come from the authenticated session.</p></div>
+      </aside>
+
+      {result && (
+        <section className="surface-card escrow-review-card form-layout-full">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Server-confirmed escrow · #{escrowId ?? "—"}</p>
+              <h2>
+                {result.status === "PAYMENT_INITIATED" ? "Review your payment" :
+                  result.status === "CREATED" ? "Ready to fund" :
+                    result.status === "FUNDED" ? "Funds are secured" : "Escrow update"}
+              </h2>
+              <p>Only actions available for the current server-returned status are shown.</p>
+            </div>
+            <StatusBadge status={result.status} />
+          </div>
+
+          <dl className="confirmation-details escrow-review-details">
+            <div><dt>Seller</dt><dd>{sellerName}</dd></div>
+            <div><dt>Item</dt><dd>{result.itemName || "—"}</dd></div>
+            <div><dt>Amount</dt><dd>{formatMoney(result.amount)}</dd></div>
+            <div><dt>Escrow ID</dt><dd className="mono-value">{escrowId ?? "—"}</dd></div>
+          </dl>
+
+          <EscrowLifecycle status={result.status} />
+
+          {result.status === "PAYMENT_INITIATED" && (
+            <div className="review-action-panel">
+              <div><strong>Confirm the payment details</strong><p>Confirm to enable funding, or decline this initiated payment.</p></div>
+              <div className="button-group">
+                <Button variant="secondary" icon="close" onClick={() => setConfirmation("cancel")} disabled={loading}>Decline payment</Button>
+                <Button
+                  icon="check"
+                  onClick={() => performAction("confirm")}
+                  loading={pending === "escrow-confirm"}
+                  loadingLabel="Confirming..."
+                  disabled={loading}
+                >
+                  Confirm payment
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {result.status === "CREATED" && (
+            <div className="review-action-panel">
+              <div><strong>Payment confirmed</strong><p>The next action moves the stated amount into escrow.</p></div>
+              <Button icon="wallet" onClick={() => setConfirmation("fund")} disabled={loading}>Fund escrow</Button>
+            </div>
+          )}
+
+          {result.status === "FUNDED" && (
+            <div className="review-action-panel">
+              <div><strong>Escrow funded successfully</strong><p>Track shipment and delivery from your escrow workspace.</p></div>
+              <Button variant="secondary" iconAfter="arrowRight" onClick={() => setPage("buyer-escrows")}>View my escrows</Button>
+            </div>
+          )}
+
+          {["CANCELLED", "EXPIRED"].includes(result.status) && (
+            <Alert tone="info" title={result.status === "CANCELLED" ? "Payment cancelled" : "Payment expired"}>
+              <p>No further action is available for this initiated payment.</p>
+            </Alert>
+          )}
+        </section>
+      )}
+
+      {confirmation === "fund" && result && (
+        <ConfirmDialog
+          title="Fund this escrow?"
+          description={`Confirm that ${formatMoney(result.amount)} should be moved into escrow for ${result.itemName || "this item"}.`}
+          confirmLabel="Fund escrow"
+          cancelLabel="Review details"
+          loading={pending === "escrow-fund"}
+          loadingLabel="Funding escrow..."
+          onConfirm={() => performAction("fund")}
+          onCancel={() => setConfirmation(null)}
+        />
+      )}
+
+      {confirmation === "cancel" && result && (
+        <ConfirmDialog
+          title="Decline this payment?"
+          description="This cancels the initiated escrow payment. The action cannot be undone from this screen."
+          confirmLabel="Decline payment"
+          cancelLabel="Keep payment"
+          confirmVariant="danger"
+          tone="warning"
+          loading={pending === "escrow-cancel"}
+          loadingLabel="Declining payment..."
+          onConfirm={() => performAction("cancel")}
+          onCancel={() => setConfirmation(null)}
+        />
+      )}
     </div>
   );
 }

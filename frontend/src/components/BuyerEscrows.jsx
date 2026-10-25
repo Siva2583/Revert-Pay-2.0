@@ -1,828 +1,323 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import API from "../services/api";
+import { apiRequest } from "../services/request";
+import useResource from "../hooks/useResource";
+import useAsyncAction from "../hooks/useAsyncAction";
 import Icon from "./Icon";
-import {
-  formatMoney,
-  formatDate,
-  readResponse,
-} from "../utils/formatters";
+import Button from "./Button";
+import { FormField } from "./Input";
+import { Alert, EmptyState, ErrorState, RefreshButton } from "./Feedback";
+import { EscrowListSkeleton } from "./LoadingSpinner";
+import EscrowCard, { EscrowContext } from "./EscrowCard";
+import { getEscrowId, getParty } from "../utils/escrow";
+import EscrowFilters from "./EscrowFilters";
+import { ConfirmDialog } from "./Modal";
+import { formatDate, formatMoney } from "../utils/formatters";
 
-function BuyerEscrows({ token, setToast }) {
-  const [escrows, setEscrows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [confirmingId, setConfirmingId] = useState(null);
+const activeStatuses = ["CREATED", "FUNDED", "SHIPPED", "UNDER_REVIEW"];
 
-  // Dispute state
+function BuyerEscrows({ token, setToast, setPage }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [disputeId, setDisputeId] = useState(null);
-  const [disputeReason, setDisputeReason] =
-    useState("ITEM_NOT_RECEIVED");
-  const [disputeDescription, setDisputeDescription] =
-    useState("");
-  const [disputingId, setDisputingId] = useState(null);
+  const [disputeReason, setDisputeReason] = useState("ITEM_NOT_RECEIVED");
+  const [disputeDescription, setDisputeDescription] = useState("");
+  const [confirmation, setConfirmation] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const { pending, run } = useAsyncAction();
 
-  const loadEscrows = async () => {
-    setLoading(true);
+  const loader = useCallback(async (signal) => {
+    const data = await apiRequest(API.buyerEscrows, {
+      token,
+      signal,
+      fallbackMessage: "Your escrow orders could not be loaded.",
+    });
 
-    try {
-      const response = await fetch(API.buyerEscrows, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data === "string"
-            ? data
-            : data.message || "Could not load buyer escrows."
-        );
-      }
-
-      setEscrows(Array.isArray(data) ? data : []);
-    } catch (error) {
-      setToast({
-        type: "error",
-        title: "Could not load escrows",
-        message: error.message || "Something went wrong.",
-      });
-    } finally {
-      setLoading(false);
+    if (!Array.isArray(data)) {
+      throw new Error("The escrow response was incomplete. Please try again.");
     }
-  };
 
-  useEffect(() => {
-    if (token) {
-      loadEscrows();
-    }
+    return data;
   }, [token]);
 
-  // -----------------------------------------
-  // CONFIRM DELIVERY
-  // -----------------------------------------
-  const confirmDelivery = async (id) => {
-    setConfirmingId(id);
+  const { data, loading, refreshing, error, refresh } = useResource(loader);
+  const escrows = useMemo(() => data || [], [data]);
 
-    try {
-      const response = await fetch(
-        `/api/escrow/${id}/confirm-delivery`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  const summary = useMemo(() => ({
+    total: escrows.length,
+    shipped: escrows.filter((item) => item.status === "SHIPPED").length,
+    released: escrows.filter((item) => item.status === "RELEASED").length,
+    active: escrows.filter((item) => activeStatuses.includes(item.status)).length,
+  }), [escrows]);
 
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data === "string"
-            ? data
-            : data.message || "Could not confirm delivery."
-        );
-      }
-
-      setToast({
-        type: "success",
-        title: "Delivery confirmed",
-        message: "Payment has been released to the seller.",
-      });
-
-      await loadEscrows();
-    } catch (error) {
-      setToast({
-        type: "error",
-        title: "Confirmation failed",
-        message: error.message || "Something went wrong.",
-      });
-    } finally {
-      setConfirmingId(null);
-    }
-  };
-
-  // -----------------------------------------
-  // RAISE DISPUTE
-  // -----------------------------------------
-  const raiseDispute = async (id) => {
-    if (!disputeDescription.trim()) {
-      setToast({
-        type: "error",
-        title: "Description required",
-        message:
-          "Please describe the issue before submitting the dispute.",
-      });
-      return;
-    }
-
-    setDisputingId(id);
-
-    try {
-      const response = await fetch(API.raiseDispute(id), {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          reason: disputeReason,
-          description: disputeDescription.trim(),
-        }),
-      });
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data === "string"
-            ? data
-            : data.message || "Could not raise the dispute."
-        );
-      }
-
-      setToast({
-        type: "success",
-        title: "Dispute raised",
-        message: "The escrow has been moved to review.",
-      });
-
-      setDisputeId(null);
-      setDisputeReason("ITEM_NOT_RECEIVED");
-      setDisputeDescription("");
-
-      await loadEscrows();
-    } catch (error) {
-      setToast({
-        type: "error",
-        title: "Dispute failed",
-        message: error.message || "Something went wrong.",
-      });
-    } finally {
-      setDisputingId(null);
-    }
-  };
-
-  // -----------------------------------------
-  // SUMMARY
-  // -----------------------------------------
-  const summary = useMemo(
-    () => ({
-      total: escrows.length,
-
-      shipped: escrows.filter(
-        (item) => item.status === "SHIPPED"
-      ).length,
-
-      released: escrows.filter(
-        (item) => item.status === "RELEASED"
-      ).length,
-
-      active: escrows.filter((item) =>
-        [
-          "CREATED",
-          "FUNDED",
-          "SHIPPED",
-          "UNDER_REVIEW",
-        ].includes(item.status)
-      ).length,
-    }),
+  const statuses = useMemo(
+    () => [...new Set(escrows.map((item) => item.status).filter(Boolean))],
     [escrows]
   );
 
-  // -----------------------------------------
-  // LOADING
-  // -----------------------------------------
-  if (loading) {
+  const filteredEscrows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return escrows.filter((escrow) => {
+      if (statusFilter !== "ALL" && escrow.status !== statusFilter) return false;
+      if (!query) return true;
+
+      const seller = getParty(escrow.seller, escrow.sellerName);
+      const searchable = [
+        escrow.itemName,
+        getEscrowId(escrow),
+        escrow.status,
+        seller.name,
+        seller.email,
+      ].join(" ").toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [escrows, search, statusFilter]);
+
+  const confirmDelivery = async () => {
+    if (!confirmation || pending) return;
+    const escrow = confirmation;
+    const id = getEscrowId(escrow);
+
+    await run(`confirm-delivery-${id}`, async () => {
+      setActionError(null);
+
+      try {
+        await apiRequest(API.escrowAction(id, "confirm-delivery"), {
+          token,
+          method: "POST",
+          fallbackMessage: "Delivery could not be confirmed.",
+        });
+
+        setConfirmation(null);
+        setToast({
+          type: "success",
+          title: "Delivery confirmed",
+          message: "Payment has been released to the seller.",
+        });
+        await refresh();
+      } catch (actionRequestError) {
+        setConfirmation(null);
+        setActionError({ id, message: actionRequestError.message });
+      }
+    });
+  };
+
+  const raiseDispute = async (event, id) => {
+    event.preventDefault();
+    if (pending) return;
+
+    if (!disputeDescription.trim()) {
+      setActionError({ id, message: "Describe the issue before submitting the dispute." });
+      return;
+    }
+
+    await run(`raise-dispute-${id}`, async () => {
+      setActionError(null);
+
+      try {
+        await apiRequest(API.raiseDispute(id), {
+          token,
+          method: "POST",
+          body: {
+            reason: disputeReason,
+            description: disputeDescription.trim(),
+          },
+          fallbackMessage: "The dispute could not be raised.",
+        });
+
+        setDisputeId(null);
+        setDisputeReason("ITEM_NOT_RECEIVED");
+        setDisputeDescription("");
+        setToast({
+          type: "success",
+          title: "Dispute raised",
+          message: "The escrow has been moved to administrative review.",
+        });
+        await refresh();
+      } catch (actionRequestError) {
+        setActionError({ id, message: actionRequestError.message });
+      }
+    });
+  };
+
+  if (loading) return <EscrowListSkeleton />;
+
+  if (error && !data) {
     return (
-      <section className="seller-page">
-        <div className="seller-loading">
-          <div className="seller-loading-mark">
-            <Icon name="shield" size={24} />
-          </div>
-
-          <p className="micro-label">
-            BUYER WORKSPACE
-          </p>
-
-          <h2>Loading your escrow orders...</h2>
-
-          <span>
-            Fetching purchases linked to your account.
-          </span>
-        </div>
-      </section>
+      <ErrorState
+        title="Your escrows are unavailable"
+        description={error}
+        onRetry={refresh}
+        retrying={refreshing}
+      />
     );
   }
 
-  // -----------------------------------------
-  // PAGE
-  // -----------------------------------------
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+  };
+
   return (
-    <section className="seller-page">
-
-      {/* PAGE HEADER */}
-      <div className="seller-dashboard-head">
+    <div className="page-stack">
+      <div className="section-heading standalone-heading">
         <div>
-          <p className="micro-label">
-            BUYER WORKSPACE
-          </p>
-
-          <h2>My escrow orders</h2>
-
-          <p>
-            Track your purchases, delivery status,
-            and protected payments.
-          </p>
+          <p className="eyebrow">Buyer workspace</p>
+          <h2>Escrow portfolio</h2>
+          <p>Follow protected payments from funding through release or resolution.</p>
         </div>
-
-        <button
-          className="seller-refresh"
-          onClick={loadEscrows}
-        >
-          <Icon name="activity" size={17} />
-          Refresh
-        </button>
+        <RefreshButton refreshing={refreshing} onClick={refresh} />
       </div>
 
-      {/* SUMMARY */}
-      <div className="seller-stats">
+      {error && data && (
+        <Alert tone="warning" title="Couldn’t refresh escrows">
+          <p>{error} The last loaded orders remain visible.</p>
+        </Alert>
+      )}
 
-        <div className="seller-stat-card">
-          <span>Total orders</span>
-          <strong>{summary.total}</strong>
-        </div>
+      <section className="metrics-grid" aria-label="Buyer escrow summary">
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Total orders</span><span className="metric-icon"><Icon name="shield" size={18} /></span></div><strong className="metric-value">{summary.total}</strong><p>All returned escrow records</p></article>
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Awaiting delivery</span><span className="metric-icon"><Icon name="package" size={18} /></span></div><strong className="metric-value">{summary.shipped}</strong><p>Orders currently marked shipped</p></article>
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Released</span><span className="metric-icon metric-icon-success"><Icon name="checkCircle" size={18} /></span></div><strong className="metric-value">{summary.released}</strong><p>Completed escrow releases</p></article>
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Active</span><span className="metric-icon"><Icon name="activity" size={18} /></span></div><strong className="metric-value">{summary.active}</strong><p>Funded, shipped, or in progress</p></article>
+      </section>
 
-        <div className="seller-stat-card">
-          <span>Awaiting delivery</span>
-          <strong>{summary.shipped}</strong>
-        </div>
+      {escrows.length > 0 && (
+        <EscrowFilters
+          search={search}
+          onSearchChange={setSearch}
+          status={statusFilter}
+          onStatusChange={setStatusFilter}
+          statuses={statuses}
+          resultCount={filteredEscrows.length}
+          totalCount={escrows.length}
+          searchLabel="Search your escrow orders"
+        />
+      )}
 
-        <div className="seller-stat-card">
-          <span>Released</span>
-          <strong>{summary.released}</strong>
-        </div>
-
-        <div className="seller-stat-card">
-          <span>Active</span>
-          <strong>{summary.active}</strong>
-        </div>
-
-      </div>
-
-      {/* EMPTY STATE */}
       {escrows.length === 0 ? (
-        <div className="seller-empty">
-
-          <div className="seller-empty-icon">
-            <Icon name="shield" size={24} />
-          </div>
-
-          <h3>No escrow orders yet</h3>
-
-          <p>
-            Your purchases will appear here once you
-            initiate an escrow payment.
-          </p>
-
+        <div className="surface-card">
+          <EmptyState
+            icon="shield"
+            title="No escrow orders yet"
+            description="Your purchases will appear here after you initiate an escrow payment."
+            action={<Button icon="plus" onClick={() => setPage("escrow")}>Initiate a payment</Button>}
+          />
+        </div>
+      ) : filteredEscrows.length === 0 ? (
+        <div className="surface-card">
+          <EmptyState
+            compact
+            icon="search"
+            title="No matching escrows"
+            description="Try a different search or clear the status filter."
+            action={<Button variant="secondary" onClick={clearFilters}>Clear filters</Button>}
+          />
         </div>
       ) : (
-
-        /* ORDER LIST */
-        <div className="seller-order-list">
-
-          {escrows.map((escrow) => {
-
-            const escrowId =
-              escrow.id ?? escrow.escrowid;
-
-            const sellerName =
-              escrow.seller?.name ||
-              escrow.sellerName ||
-              escrow.seller?.email ||
-              "Unknown seller";
-
-            const sellerEmail =
-              escrow.seller?.email || "";
-
-            const status =
-              escrow.status || "UNKNOWN";
-
-            const statusClass = status
-              .toLowerCase()
-              .replaceAll("_", "-");
+        <div className="escrow-list">
+          {filteredEscrows.map((escrow) => {
+            const id = getEscrowId(escrow);
+            const seller = getParty(escrow.seller, escrow.sellerName);
+            const isDisputing = pending === `raise-dispute-${id}`;
 
             return (
-              <article
-                className="seller-order-card"
-                key={escrowId}
+              <EscrowCard
+                key={id}
+                escrow={escrow}
+                parties={[{ label: "Seller", ...seller }]}
+                icon="shield"
               >
+                {actionError?.id === id && (
+                  <Alert tone="error" title="Action couldn’t be completed">
+                    <p>{actionError.message || "Please try again."}</p>
+                  </Alert>
+                )}
 
-                {/* -------------------------------- */}
-                {/* TOP — SAME STRUCTURE AS SELLER */}
-                {/* -------------------------------- */}
-
-                <div className="seller-order-top">
-
-                  <div className="seller-order-title">
-
-                    <div className="seller-order-icon">
-                      <Icon
-                        name="shield"
-                        size={21}
-                      />
-                    </div>
-
-                    <div>
-
-                      <p className="micro-label">
-                        ESCROW #{escrowId}
-                      </p>
-
-                      <h3>
-                        {escrow.itemName ||
-                          "Unnamed item"}
-                      </h3>
-
-                    </div>
-
-                  </div>
-
-                  <span
-                    className={`seller-status seller-status-${statusClass}`}
-                  >
-                    <i />
-                    {status.replaceAll(
-                      "_",
-                      " "
-                    )}
-                  </span>
-
-                </div>
-
-                {/* -------------------------------- */}
-                {/* DETAILS — SAME AS SELLER */}
-                {/* -------------------------------- */}
-
-                <div className="seller-order-details">
-
-                  <div>
-
-                    <span>SELLER</span>
-
-                    <strong>
-                      {sellerName}
-                    </strong>
-
-                    {sellerEmail && (
-                      <small>
-                        {sellerEmail}
-                      </small>
-                    )}
-
-                  </div>
-
-                  <div>
-
-                    <span>AMOUNT</span>
-
-                    <strong>
-                      {formatMoney(
-                        escrow.amount
-                      )}
-                    </strong>
-
-                    <small>
-                      Protected escrow
-                    </small>
-
-                  </div>
-
-                  <div>
-
-                    <span>TRANSACTION</span>
-
-                    <strong>
-                      #{escrowId}
-                    </strong>
-
-                    <small>
-                      Protected escrow
-                    </small>
-
-                  </div>
-
-                </div>
-
-                {/* -------------------------------- */}
-                {/* SHIPPED */}
-                {/* -------------------------------- */}
-
-                {status === "SHIPPED" && (
+                {escrow.status === "SHIPPED" && (
                   <>
-
-                    <div className="seller-shipment-panel">
-
-                      <div className="seller-shipment-icon">
-                        <Icon
-                          name="package"
-                          size={19}
-                        />
+                    <EscrowContext
+                      icon="package"
+                      title="Shipment recorded"
+                      description={`Shipped ${formatDate(escrow.shippedAt)}. Confirm only after you receive the item.`}
+                      meta={escrow.autoReleaseAt && <><span>Auto-release</span><strong>{formatDate(escrow.autoReleaseAt)}</strong></>}
+                    />
+                    <div className="escrow-action-panel">
+                      <div><strong>Order delivered?</strong><p>Confirming delivery releases the payment to the seller.</p></div>
+                      <div className="button-group">
+                        <Button
+                          variant="secondary"
+                          icon="shield"
+                          onClick={() => {
+                            if (disputeId !== id) setDisputeDescription("");
+                            setDisputeId(disputeId === id ? null : id);
+                            setActionError(null);
+                          }}
+                          disabled={pending !== null}
+                        >
+                          Raise dispute
+                        </Button>
+                        <Button icon="check" onClick={() => setConfirmation(escrow)} disabled={pending !== null}>Confirm delivery</Button>
                       </div>
-
-                      <div>
-
-                        <strong>
-                          Shipment recorded
-                        </strong>
-
-                        <span>
-                          Shipped{" "}
-                          {formatDate(
-                            escrow.shippedAt
-                          )}
-                        </span>
-
-                      </div>
-
-                      <div className="seller-release-time">
-
-                        <span>
-                          AUTO RELEASE
-                        </span>
-
-                        <strong>
-                          {formatDate(
-                            escrow.autoReleaseAt
-                          )}
-                        </strong>
-
-                      </div>
-
                     </div>
 
-                    {/* BUYER ACTIONS */}
-
-                    <div className="seller-order-action">
-
-                      <div>
-
-                        <strong>
-                          Order delivered?
-                        </strong>
-
-                        <span>
-                          Confirm delivery to release
-                          the payment to the seller,
-                          or raise a dispute.
-                        </span>
-
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-
-                        <button
-                          className="seller-ship-button"
-                          onClick={() =>
-                            setDisputeId(
-                              disputeId === escrowId
-                                ? null
-                                : escrowId
-                            )
-                          }
-                          disabled={
-                            confirmingId === escrowId ||
-                            disputingId === escrowId
-                          }
-                        >
-                          <Icon
-                            name="shield"
-                            size={17}
-                          />
-
-                          Raise Dispute
-                        </button>
-
-                        <button
-                          className="seller-ship-button"
-                          onClick={() =>
-                            confirmDelivery(
-                              escrowId
-                            )
-                          }
-                          disabled={
-                            confirmingId === escrowId ||
-                            disputingId === escrowId
-                          }
-                        >
-                          <Icon
-                            name="check"
-                            size={17}
-                          />
-
-                          {confirmingId === escrowId
-                            ? "Confirming..."
-                            : "Confirm Delivery"}
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                    {/* DISPUTE FORM */}
-
-                    {disputeId === escrowId && (
-                      <div className="seller-dispute-panel">
-
-                        <div className="seller-dispute-header">
-
-                          <div className="seller-dispute-icon">
-                            <Icon
-                              name="shield"
-                              size={19}
-                            />
-                          </div>
-
-                          <div>
-                            <strong>
-                              Raise a dispute
-                            </strong>
-
-                            <span>
-                              Tell us what went wrong
-                              with this order.
-                            </span>
-                          </div>
-
-                        </div>
-
-                        <div className="seller-dispute-details">
-
-                          <div>
-
-                            <span>
-                              REASON
-                            </span>
-
-                            <select
-                              value={disputeReason}
-                              onChange={(event) =>
-                                setDisputeReason(
-                                  event.target.value
-                                )
-                              }
-                              style={{
-                                width: "100%",
-                                marginTop: "7px",
-                                padding: "10px",
-                                borderRadius: "8px",
-                                border:
-                                  "1px solid #deded8",
-                                background: "#fff",
-                              }}
-                            >
-
-                              <option value="ITEM_NOT_RECEIVED">
-                                Item not received
-                              </option>
-
-                              <option value="ITEM_NOT_AS_DESCRIBED">
-                                Item not as described
-                              </option>
-
-                              <option value="DAMAGED_ITEM">
-                                Damaged item
-                              </option>
-
-                              <option value="WRONG_ITEM">
-                                Wrong item
-                              </option>
-
-                              <option value="COUNTERFEIT_ITEM">
-                                Counterfeit item
-                              </option>
-
-                              <option value="SELLER_ISSUE">
-                                Seller issue
-                              </option>
-
-                              <option value="OTHER">
-                                Other
-                              </option>
-
+                    {disputeId === id && (
+                      <form className="dispute-form" onSubmit={(event) => raiseDispute(event, id)}>
+                        <div className="dispute-form-heading"><Icon name="alertCircle" size={19} /><div><strong>Raise a dispute</strong><p>Provide a clear explanation for administrative review.</p></div></div>
+                        <div className="dispute-form-grid">
+                          <FormField id={`dispute-reason-${id}`} label="Reason" required>
+                            <select id={`dispute-reason-${id}`} value={disputeReason} onChange={(event) => setDisputeReason(event.target.value)} disabled={isDisputing} required>
+                              <option value="ITEM_NOT_RECEIVED">Item not received</option>
+                              <option value="ITEM_NOT_AS_DESCRIBED">Item not as described</option>
+                              <option value="DAMAGED_ITEM">Damaged item</option>
+                              <option value="WRONG_ITEM">Wrong item</option>
+                              <option value="COUNTERFEIT_ITEM">Counterfeit item</option>
+                              <option value="SELLER_ISSUE">Seller issue</option>
+                              <option value="OTHER">Other</option>
                             </select>
-
-                          </div>
-
-                          <div>
-
-                            <span>
-                              DESCRIPTION
-                            </span>
-
-                            <textarea
-                              value={
-                                disputeDescription
-                              }
-                              onChange={(event) =>
-                                setDisputeDescription(
-                                  event.target.value
-                                )
-                              }
-                              placeholder="Describe the issue..."
-                              rows={4}
-                              style={{
-                                width: "100%",
-                                marginTop: "7px",
-                                padding: "10px",
-                                borderRadius: "8px",
-                                border:
-                                  "1px solid #deded8",
-                                resize: "vertical",
-                                boxSizing:
-                                  "border-box",
-                                font: "inherit",
-                              }}
-                            />
-
-                          </div>
-
+                          </FormField>
+                          <FormField id={`dispute-description-${id}`} label="Description" required>
+                            <textarea id={`dispute-description-${id}`} rows={4} value={disputeDescription} onChange={(event) => setDisputeDescription(event.target.value)} placeholder="Describe what happened with this order" disabled={isDisputing} required />
+                          </FormField>
                         </div>
-
-                        <div className="seller-dispute-response-form">
-
-                          <button
-                            className="seller-ship-button"
-                            onClick={() =>
-                              setDisputeId(null)
-                            }
-                            disabled={
-                              disputingId === escrowId
-                            }
-                          >
-                            Cancel
-                          </button>
-
-                          <button
-                            className="seller-ship-button"
-                            onClick={() =>
-                              raiseDispute(
-                                escrowId
-                              )
-                            }
-                            disabled={
-                              disputingId === escrowId
-                            }
-                          >
-                            {disputingId === escrowId
-                              ? "Submitting..."
-                              : "Submit Dispute"}
-                          </button>
-
+                        <div className="form-actions">
+                          <Button variant="secondary" onClick={() => setDisputeId(null)} disabled={isDisputing}>Cancel</Button>
+                          <Button type="submit" icon="shield" loading={isDisputing} loadingLabel="Submitting dispute..." disabled={pending !== null}>Submit dispute</Button>
                         </div>
-
-                      </div>
+                      </form>
                     )}
-
                   </>
                 )}
 
-                {/* -------------------------------- */}
-                {/* FUNDED */}
-                {/* -------------------------------- */}
-
-                {status === "FUNDED" && (
-                  <div className="seller-shipment-panel">
-
-                    <div className="seller-shipment-icon">
-                      <Icon
-                        name="shield"
-                        size={19}
-                      />
-                    </div>
-
-                    <div>
-
-                      <strong>
-                        Payment secured
-                      </strong>
-
-                      <span>
-                        Your payment is held safely
-                        until the seller ships the item.
-                      </span>
-
-                    </div>
-
-                  </div>
-                )}
-
-                {/* -------------------------------- */}
-                {/* UNDER REVIEW */}
-                {/* -------------------------------- */}
-
-                {status === "UNDER_REVIEW" && (
-                  <div className="seller-shipment-panel">
-
-                    <div className="seller-shipment-icon">
-                      <Icon
-                        name="shield"
-                        size={19}
-                      />
-                    </div>
-
-                    <div>
-
-                      <strong>
-                        Dispute under review
-                      </strong>
-
-                      <span>
-                        This escrow is currently being
-                        reviewed.
-                      </span>
-
-                    </div>
-
-                  </div>
-                )}
-
-                {/* -------------------------------- */}
-                {/* RELEASED */}
-                {/* -------------------------------- */}
-
-                {status === "RELEASED" && (
-                  <div className="seller-shipment-panel">
-
-                    <div className="seller-shipment-icon">
-                      <Icon
-                        name="check"
-                        size={19}
-                      />
-                    </div>
-
-                    <div>
-
-                      <strong>
-                        Payment released
-                      </strong>
-
-                      <span>
-                        Delivery was confirmed and
-                        the seller has received the
-                        escrow funds.
-                      </span>
-
-                    </div>
-
-                  </div>
-                )}
-
-                {/* -------------------------------- */}
-                {/* TERMINAL STATES */}
-                {/* -------------------------------- */}
-
-                {[
-                  "EXPIRED",
-                  "CANCELLED",
-                  "REFUNDED",
-                ].includes(status) && (
-                  <div className="seller-order-footer">
-
-                    <span>
-                      {status === "EXPIRED"
-                        ? "This confirmation window expired."
-                        : status === "CANCELLED"
-                        ? "This payment was cancelled."
-                        : "Funds have been refunded."}
-                    </span>
-
-                    <strong>
-                      {status.replaceAll(
-                        "_",
-                        " "
-                      )}
-                    </strong>
-
-                  </div>
-                )}
-
-              </article>
+                {escrow.status === "FUNDED" && <EscrowContext icon="shield" tone="success" title="Payment secured" description="Your payment is held in escrow while you wait for the seller to ship the item." />}
+                {escrow.status === "PAYMENT_INITIATED" && <EscrowContext icon="clock" title="Payment awaiting review" description="This payment has been initiated but has not been confirmed or funded." />}
+                {escrow.status === "CREATED" && <EscrowContext icon="clock" title="Payment confirmed" description="This escrow is confirmed and awaiting funding." />}
+                {escrow.status === "UNDER_REVIEW" && <EscrowContext icon="alertCircle" tone="warning" title="Dispute under review" description="An administrator is reviewing this escrow. No buyer action is currently available." />}
+                {escrow.status === "RELEASED" && <EscrowContext icon="checkCircle" tone="success" title="Payment released" description="The escrow funds have been released to the seller." />}
+                {escrow.status === "REFUNDED" && <EscrowContext icon="refresh" title="Funds refunded" description="The protected funds have been returned to the buyer." />}
+                {escrow.status === "CANCELLED" && <EscrowContext icon="close" title="Payment cancelled" description="This initiated payment was cancelled before funding." />}
+                {escrow.status === "EXPIRED" && <EscrowContext icon="clock" title="Confirmation window expired" description="This initiated payment expired before confirmation." />}
+              </EscrowCard>
             );
           })}
-
         </div>
       )}
 
-    </section>
+      {confirmation && (
+        <ConfirmDialog
+          title="Confirm delivery and release funds?"
+          description={`Confirm that you received ${confirmation.itemName || "this item"}. This releases ${formatMoney(confirmation.amount)} to the seller.`}
+          confirmLabel="Confirm delivery"
+          cancelLabel="Not yet"
+          loading={pending === `confirm-delivery-${getEscrowId(confirmation)}`}
+          loadingLabel="Confirming delivery..."
+          onConfirm={confirmDelivery}
+          onCancel={() => setConfirmation(null)}
+        />
+      )}
+    </div>
   );
 }
 

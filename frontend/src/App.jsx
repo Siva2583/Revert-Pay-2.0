@@ -1,6 +1,7 @@
-
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+import "./styles/editorial.css";
+import "./styles/workspace.css";
 
 import AuthScreen from "./components/AuthScreen";
 import ResetPassword from "./components/ResetPassword";
@@ -16,27 +17,25 @@ import SellerEscrows from "./components/SellerEscrows";
 import BuyerEscrows from "./components/BuyerEscrows";
 import AdminEscrows from "./components/AdminEscrows";
 import AdminLedger from "./components/AdminLedger";
+import { getRoleFromToken } from "./utils/auth";
+import { getAllowedPages } from "./utils/navigation";
 
 function App() {
-  const [token, setToken] = useState(
-    localStorage.getItem("token")
-  );
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [page, setPage] = useState("overview");
   const [toast, setToast] = useState(null);
+  const [navigationOpen, setNavigationOpen] = useState(false);
 
-  // Detect password-reset links before checking login status.
-  const isResetPasswordPage =
-    window.location.pathname === "/reset-password";
-
-  const resetToken = new URLSearchParams(
-    window.location.search
-  ).get("token");
+  const isResetPasswordPage = window.location.pathname === "/reset-password";
+  const resetToken = new URLSearchParams(window.location.search).get("token");
+  const role = getRoleFromToken(token);
+  const allowedPages = getAllowedPages(role);
+  const activePage = allowedPages.includes(page) ? page : "overview";
 
   useEffect(() => {
-    if (!toast) return;
+    if (!toast) return undefined;
 
-    const timer = setTimeout(() => setToast(null), 4500);
-
+    const timer = setTimeout(() => setToast(null), 6000);
     return () => clearTimeout(timer);
   }, [toast]);
 
@@ -50,9 +49,19 @@ function App() {
     localStorage.removeItem("token");
     setToken(null);
     setPage("overview");
+    setToast(null);
+    setNavigationOpen(false);
   };
 
-  // A reset link must work even when the user is already logged in.
+  const closeNavigation = useCallback(() => {
+    setNavigationOpen(false);
+  }, []);
+
+  const navigate = useCallback((nextPage) => {
+    setPage(nextPage);
+    setNavigationOpen(false);
+  }, []);
+
   if (isResetPasswordPage) {
     return (
       <ResetPassword
@@ -71,82 +80,62 @@ function App() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+
       <Sidebar
-        page={page}
-        setPage={setPage}
+        page={activePage}
+        setPage={navigate}
         logout={logout}
-        token={token}
+        role={role}
+        open={navigationOpen}
+        onClose={closeNavigation}
       />
 
-      <main className="main-workspace">
-        {page !== "admin-ledger" && (
-          <Header page={page} />
-        )}
+      <main className="main-workspace" id="main-content" tabIndex={-1}>
+        <Header
+          page={activePage}
+          role={role}
+          onOpenNavigation={() => setNavigationOpen(true)}
+        />
 
         <div className="workspace-content">
-          {page === "overview" && (
-            <Overview setPage={setPage} />
+          {activePage === "overview" && (
+            <Overview token={token} role={role} setPage={navigate} />
           )}
 
-          {page === "accounts" && (
-            <AccountLookup
-              token={token}
-              setToast={setToast}
-            />
+          {activePage === "accounts" && (
+            <AccountLookup token={token} setToast={setToast} />
           )}
 
-          {page === "create" && (
-            <CreateAccount
-              token={token}
-              setToast={setToast}
-            />
+          {activePage === "create" && (
+            <CreateAccount token={token} setToast={setToast} setPage={navigate} />
           )}
 
-          {page === "escrow" && (
-            <EscrowInitiate
-              token={token}
-              setToast={setToast}
-            />
+          {activePage === "escrow" && (
+            <EscrowInitiate token={token} setToast={setToast} setPage={navigate} />
           )}
 
-          {page === "seller-escrows" && (
-            <SellerEscrows
-              token={token}
-              setToast={setToast}
-            />
+          {activePage === "seller-escrows" && (
+            <SellerEscrows token={token} setToast={setToast} />
           )}
 
-          {page === "buyer-escrows" && (
-            <BuyerEscrows
-              token={token}
-              setToast={setToast}
-            />
+          {activePage === "buyer-escrows" && (
+            <BuyerEscrows token={token} setToast={setToast} setPage={navigate} />
           )}
 
-          {page === "admin-escrows" && (
-            <AdminEscrows
-              token={token}
-              setToast={setToast}
-            />
+          {activePage === "admin-escrows" && (
+            <AdminEscrows token={token} setToast={setToast} />
           )}
 
-          {page === "admin-ledger" && (
-            <AdminLedger token={token} />
-          )}
+          {activePage === "admin-ledger" && <AdminLedger token={token} />}
 
-          {page === "my-account" && (
-            <MyAccount token={token} />
-          )}
+          {activePage === "my-account" && <MyAccount token={token} />}
         </div>
       </main>
 
-      <Toast
-        toast={toast}
-        closeToast={() => setToast(null)}
-      />
+      <Toast toast={toast} closeToast={() => setToast(null)} />
     </div>
   );
 }
 
 export default App;
-

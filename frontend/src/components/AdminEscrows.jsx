@@ -1,487 +1,225 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Icon from "./Icon";
-import {
-  formatMoney,
-  formatDate,
-  readResponse,
-} from "../utils/formatters";
+import API from "../services/api";
+import { apiRequest } from "../services/request";
+import useResource from "../hooks/useResource";
+import useAsyncAction from "../hooks/useAsyncAction";
+import Button from "./Button";
+import { Alert, EmptyState, ErrorState, RefreshButton, StatusBadge } from "./Feedback";
+import { EscrowListSkeleton } from "./LoadingSpinner";
+import EscrowCard from "./EscrowCard";
+import { getEscrowId, getParty } from "../utils/escrow";
+import EscrowFilters from "./EscrowFilters";
+import { ConfirmDialog } from "./Modal";
+import { formatDate, formatMoney, formatStatus } from "../utils/formatters";
 
-const AdminEscrows = ({ token, setToast }) => {
-  const [escrows, setEscrows] = useState([]);
-  const [disputes, setDisputes] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [resolvingId, setResolvingId] = useState(null);
-  // -----------------------------------------
-  // LOAD DISPUTES
-  // -----------------------------------------
-  const loadDisputes = async () => {
-    if (!token) return;
+function AdminEscrows({ token, setToast }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [resolution, setResolution] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const { pending, run } = useAsyncAction();
 
-    setLoading(true);
+  const loader = useCallback(async (signal) => {
+    const adminEscrows = await apiRequest(API.adminEscrows, {
+      token,
+      signal,
+      fallbackMessage: "The administrative dispute queue could not be loaded.",
+    });
 
-    try {
-      const response = await fetch("/api/escrow/admin", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data === "string"
-            ? data
-            : data?.message || "Could not load admin disputes."
-        );
-      }
-
-      const adminEscrows = Array.isArray(data) ? data : [];
-
-      setEscrows(adminEscrows);
-      setDisputes({});
-
-      for (const escrow of adminEscrows) {
-        try {
-          const disputeResponse = await fetch(
-            `/api/escrow/${escrow.id}/dispute`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (!disputeResponse.ok) continue;
-
-          const disputeData = await readResponse(disputeResponse);
-
-          if (disputeData) {
-            setDisputes((prev) => ({
-              ...prev,
-              [escrow.id]: disputeData,
-            }));
-          }
-        } catch (error) {
-          console.error(
-            `Could not load dispute for escrow ${escrow.id}`,
-            error
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load admin disputes", error);
-
-      setToast({
-        type: "error",
-        title: "Failed to load disputes",
-        message: error.message || "Something went wrong.",
-      });
-    } finally {
-      setLoading(false);
+    if (!Array.isArray(adminEscrows)) {
+      throw new Error("The dispute queue response was incomplete. Please try again.");
     }
-  };
-  useEffect(() => {
-    if (token) {
-      loadDisputes();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    const results = await Promise.all(adminEscrows.map(async (escrow) => {
+      const id = getEscrowId(escrow);
+
+      try {
+        const dispute = await apiRequest(API.getDispute(id), {
+          token,
+          signal,
+          fallbackMessage: "Dispute details could not be loaded.",
+        });
+        return { id, dispute, error: null };
+      } catch (disputeError) {
+        if (disputeError.name === "AbortError") throw disputeError;
+        return { id, dispute: null, error: disputeError.message };
+      }
+    }));
+
+    const disputes = {};
+    const disputeErrors = [];
+
+    results.forEach((result) => {
+      if (result.dispute) disputes[result.id] = result.dispute;
+      if (result.error) disputeErrors.push({ id: result.id, message: result.error });
+    });
+
+    return { escrows: adminEscrows, disputes, disputeErrors };
   }, [token]);
 
-  const resolveDispute = async (disputeId, resolution) => {
-    setResolvingId(disputeId);
+  const { data, loading, refreshing, error, refresh } = useResource(loader);
+  const escrows = useMemo(() => data?.escrows || [], [data]);
+  const disputes = useMemo(() => data?.disputes || {}, [data]);
+  const disputeErrors = data?.disputeErrors || [];
 
-    try {
-      const response = await fetch(
-        `/api/escrow/${disputeId}/resolve`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ resolution }),
-        }
-      );
+  const summary = useMemo(() => ({
+    total: escrows.length,
+    underReview: escrows.filter((item) => item.status === "UNDER_REVIEW").length,
+    totalAmount: escrows.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    withSellerResponse: escrows.filter((item) => disputes[getEscrowId(item)]?.sellerResponse).length,
+  }), [escrows, disputes]);
 
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data === "string"
-            ? data
-            : data?.message || "Could not resolve the dispute."
-        );
-      }
-
-      setToast({
-        type: "success",
-        title:
-          resolution === "RELEASE"
-            ? "Funds released"
-            : "Refund approved",
-        message:
-          resolution === "RELEASE"
-            ? "The dispute was resolved in favor of the seller."
-            : "The dispute was resolved in favor of the buyer.",
-      });
-
-      await loadDisputes();
-    } catch (error) {
-      setToast({
-        type: "error",
-        title: "Resolution failed",
-        message: error.message || "Something went wrong.",
-      });
-    } finally {
-      setResolvingId(null);
-    }
-  };
-
-  // -----------------------------------------
-  // SUMMARY
-  // -----------------------------------------
-  const summary = useMemo(
-    () => ({
-      total: escrows.length,
-
-      underReview: escrows.filter(
-        (item) => item.status === "UNDER_REVIEW"
-      ).length,
-
-      totalAmount: escrows.reduce(
-        (sum, item) => sum + Number(item.amount || 0),
-        0
-      ),
-
-      withSellerResponse: escrows.filter(
-        (item) => disputes[item.id]?.sellerResponse
-      ).length,
-    }),
-    [escrows, disputes]
+  const statuses = useMemo(
+    () => [...new Set(escrows.map((item) => item.status).filter(Boolean))],
+    [escrows]
   );
 
-  // -----------------------------------------
-  // LOADING
-  // -----------------------------------------
-  if (loading) {
-    return (
-      <section className="seller-page">
-        <div className="seller-loading">
-          <div className="seller-loading-mark">
-            <Icon name="shield" size={24} />
-          </div>
+  const filteredEscrows = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-          <p className="micro-label">ADMIN WORKSPACE</p>
+    return escrows.filter((escrow) => {
+      if (statusFilter !== "ALL" && escrow.status !== statusFilter) return false;
+      if (!query) return true;
 
-          <h2>Loading dispute queue...</h2>
+      const buyer = getParty(escrow.buyer, escrow.buyerName);
+      const seller = getParty(escrow.seller, escrow.sellerName);
+      return [escrow.itemName, getEscrowId(escrow), escrow.status, buyer.name, buyer.email, seller.name, seller.email]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [escrows, search, statusFilter]);
 
-          <span>
-            Fetching escrow disputes that require review.
-          </span>
-        </div>
-      </section>
-    );
+  const resolveDispute = async () => {
+    if (!resolution || pending) return;
+
+    const { dispute, escrow, decision } = resolution;
+    const escrowId = getEscrowId(escrow);
+
+    await run(`resolve-${dispute.id}`, async () => {
+      setActionError(null);
+
+      try {
+        await apiRequest(API.resolveDispute(dispute.id), {
+          token,
+          method: "POST",
+          body: { resolution: decision },
+          fallbackMessage: "The dispute could not be resolved.",
+        });
+
+        setResolution(null);
+        setToast({
+          type: "success",
+          title: decision === "RELEASE" ? "Funds released" : "Refund approved",
+          message: decision === "RELEASE"
+            ? "The dispute was resolved in favor of the seller."
+            : "The dispute was resolved in favor of the buyer.",
+        });
+        await refresh();
+      } catch (actionRequestError) {
+        setResolution(null);
+        setActionError({ id: escrowId, message: actionRequestError.message });
+      }
+    });
+  };
+
+  if (loading) return <EscrowListSkeleton />;
+
+  if (error && !data) {
+    return <ErrorState title="The dispute queue is unavailable" description={error} onRetry={refresh} retrying={refreshing} />;
   }
 
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+  };
+
   return (
-    <section className="seller-page">
-      <div className="seller-dashboard-head">
-        <div>
-          <p className="micro-label">ADMIN WORKSPACE</p>
-
-          <h2>Dispute resolution</h2>
-
-          <p>
-            Review buyer disputes, seller responses, and resolve protected
-            escrow payments.
-          </p>
-        </div>
-
-        <button
-          className="seller-refresh"
-          onClick={loadDisputes}
-        >
-          <Icon name="activity" size={17} />
-          Refresh
-        </button>
+    <div className="page-stack">
+      <div className="section-heading standalone-heading">
+        <div><p className="eyebrow">Administrative workspace</p><h2>Dispute queue</h2><p>Review buyer evidence, seller responses, and the available resolution actions.</p></div>
+        <RefreshButton refreshing={refreshing} onClick={refresh} />
       </div>
 
-      {/* ------------------------------------- */}
-      {/* DISPUTE SUMMARY */}
-      {/* ------------------------------------- */}
-      <div className="seller-stats">
-        <div className="seller-stat-card">
-          <span>Disputes</span>
-          <strong>{summary.total}</strong>
-        </div>
+      {error && data && <Alert tone="warning" title="Couldn’t refresh disputes"><p>{error} The last loaded queue remains visible.</p></Alert>}
+      {disputeErrors.length > 0 && <Alert tone="warning" title="Some records need attention"><p>{disputeErrors.length} dispute {disputeErrors.length === 1 ? "record" : "records"} could not be fully loaded. Resolution is unavailable where the dispute ID is missing.</p></Alert>}
 
-        <div className="seller-stat-card">
-          <span>Under review</span>
-          <strong>{summary.underReview}</strong>
-        </div>
+      <section className="metrics-grid" aria-label="Dispute queue summary">
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Disputes</span><span className="metric-icon"><Icon name="alertCircle" size={18} /></span></div><strong className="metric-value">{summary.total}</strong><p>Records returned to the admin queue</p></article>
+        <article className="metric-card metric-card-emphasis"><div className="metric-card-top"><span className="metric-label">Under review</span><span className="metric-icon"><Icon name="clock" size={18} /></span></div><strong className="metric-value">{summary.underReview}</strong><p>Escrows currently under review</p></article>
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Seller responded</span><span className="metric-icon metric-icon-success"><Icon name="checkCircle" size={18} /></span></div><strong className="metric-value">{summary.withSellerResponse}</strong><p>Records with a seller response</p></article>
+        <article className="metric-card"><div className="metric-card-top"><span className="metric-label">Protected amount</span><span className="metric-icon"><Icon name="shield" size={18} /></span></div><strong className="metric-value">{formatMoney(summary.totalAmount)}</strong><p>Sum of returned escrow amounts</p></article>
+      </section>
 
-        <div className="seller-stat-card">
-          <span>Seller responded</span>
-          <strong>{summary.withSellerResponse}</strong>
-        </div>
+      {escrows.length > 0 && <EscrowFilters search={search} onSearchChange={setSearch} status={statusFilter} onStatusChange={setStatusFilter} statuses={statuses} resultCount={filteredEscrows.length} totalCount={escrows.length} searchLabel="Search administrative disputes" />}
 
-        <div className="seller-stat-card">
-          <span>Protected amount</span>
-          <strong>{formatMoney(summary.totalAmount)}</strong>
-        </div>
-      </div>
-
-      {/* ------------------------------------- */}
-      {/* EMPTY STATE */}
-      {/* ------------------------------------- */}
       {escrows.length === 0 ? (
-        <div className="seller-empty">
-          <div className="seller-empty-icon">
-            <Icon name="check" size={24} />
-          </div>
-
-          <h3>No disputes require review</h3>
-
-          <p>The dispute queue is currently clear.</p>
-        </div>
+        <div className="surface-card"><EmptyState icon="checkCircle" title="No disputes require review" description="The administrative dispute queue is currently clear." /></div>
+      ) : filteredEscrows.length === 0 ? (
+        <div className="surface-card"><EmptyState compact icon="search" title="No matching disputes" description="Try a different search or clear the status filter." action={<Button variant="secondary" onClick={clearFilters}>Clear filters</Button>} /></div>
       ) : (
-        /* ------------------------------------- */
-        /* DISPUTE LIST */
-        /* ------------------------------------- */
-        <div className="seller-order-list">
-          {escrows.map((escrow) => {
-            const dispute = disputes[escrow.id];
-
-            const buyerName =
-              escrow.buyer?.name ||
-              escrow.buyerName ||
-              escrow.buyer?.email ||
-              "Unknown buyer";
-
-            const buyerEmail = escrow.buyer?.email || "";
-
-            const sellerName =
-              escrow.seller?.name ||
-              escrow.sellerName ||
-              escrow.seller?.email ||
-              "Unknown seller";
-
-            const sellerEmail = escrow.seller?.email || "";
-
-            const status = escrow.status || "UNKNOWN";
-
-            const statusClass = status
-              .toLowerCase()
-              .replaceAll("_", "-");
+        <div className="escrow-list">
+          {filteredEscrows.map((escrow) => {
+            const id = getEscrowId(escrow);
+            const dispute = disputes[id];
+            const disputeError = disputeErrors.find((item) => item.id === id);
+            const buyer = getParty(escrow.buyer, escrow.buyerName);
+            const seller = getParty(escrow.seller, escrow.sellerName);
 
             return (
-              <article
-                className="seller-order-card"
-                key={escrow.id}
-              >
-                {/* TOP */}
-                <div className="seller-order-top">
-                  <div className="seller-order-title">
-                    <div className="seller-order-icon">
-                      <Icon name="shield" size={21} />
-                    </div>
+              <EscrowCard key={id} escrow={escrow} icon="alertCircle" parties={[{ label: "Buyer", ...buyer }, { label: "Seller", ...seller }]}>
+                {actionError?.id === id && <Alert tone="error" title="Resolution couldn’t be completed"><p>{actionError.message || "Please try again."}</p></Alert>}
 
-                    <div>
-                      <p className="micro-label">
-                        ESCROW #{escrow.id}
-                      </p>
+                <section className="dispute-record admin-dispute-record">
+                  <div className="dispute-record-heading"><div><p className="eyebrow">Case evidence</p><h3>Dispute #{dispute?.id ?? "unavailable"}</h3></div>{dispute && <StatusBadge status={dispute.status} />}</div>
 
-                      <h3>
-                        {escrow.itemName || "Unnamed item"}
-                      </h3>
-                    </div>
-                  </div>
+                  {disputeError && <Alert tone="warning" title="Dispute details unavailable"><p>{disputeError.message}</p></Alert>}
 
-                  <span
-                    className={`seller-status seller-status-${statusClass}`}
-                  >
-                    <i />
+                  {dispute ? (
+                    <>
+                      <dl className="dispute-details-grid admin-dispute-details">
+                        <div><dt>Reason</dt><dd>{formatStatus(dispute.reason)}</dd></div>
+                        <div><dt>Opened</dt><dd>{formatDate(dispute.createdAt)}</dd></div>
+                        <div className="detail-span-full"><dt>Buyer description</dt><dd>{dispute.description || "No description provided."}</dd></div>
+                        <div className="detail-span-full"><dt>Seller response</dt><dd>{dispute.sellerResponse || "No response from the seller yet."}</dd></div>
+                        {dispute.respondedAt && <div><dt>Responded</dt><dd>{formatDate(dispute.respondedAt)}</dd></div>}
+                      </dl>
 
-                    {status.replaceAll("_", " ")}
-                  </span>
-                </div>
-
-                {/* ESCROW DETAILS */}
-                <div className="seller-order-details">
-                  <div>
-                    <span>BUYER</span>
-
-                    <strong>{buyerName}</strong>
-
-                    {buyerEmail && (
-                      <small>{buyerEmail}</small>
-                    )}
-                  </div>
-
-                  <div>
-                    <span>SELLER</span>
-
-                    <strong>{sellerName}</strong>
-
-                    {sellerEmail && (
-                      <small>{sellerEmail}</small>
-                    )}
-                  </div>
-
-                  <div>
-                    <span>AMOUNT</span>
-
-                    <strong>
-                      {formatMoney(escrow.amount)}
-                    </strong>
-
-                    <small>Protected escrow</small>
-                  </div>
-                </div>
-
-                {/* TIMELINE */}
-                <div className="seller-order-details">
-                  <div>
-                    <span>CREATED</span>
-
-                    <strong>
-                      {formatDate(escrow.createdAt)}
-                    </strong>
-                  </div>
-
-                  {escrow.shippedAt && (
-                    <div>
-                      <span>SHIPPED</span>
-
-                      <strong>
-                        {formatDate(escrow.shippedAt)}
-                      </strong>
-                    </div>
-                  )}
-
-                  <div>
-                    <span>TRANSACTION</span>
-
-                    <strong>#{escrow.id}</strong>
-                  </div>
-                </div>
-
-                {/* DISPUTE */}
-                {dispute && (
-                  <div className="seller-dispute-panel">
-                    {/* DISPUTE HEADER */}
-                    <div className="seller-dispute-header">
-                      <div className="seller-dispute-icon">
-                        <Icon name="shield" size={19} />
-                      </div>
-
-                      <div>
-                        <strong>Dispute raised</strong>
-
-                        <span>
-                          Buyer has requested administrative review.
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* DISPUTE DETAILS */}
-                    <div className="seller-dispute-details">
-                      <div>
-                        <span>REASON</span>
-
-                        <strong>
-                          {dispute.reason?.replaceAll("_", " ") ||
-                            "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>BUYER DESCRIPTION</span>
-
-                        <strong>
-                          {dispute.description ||
-                            "No description provided."}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>SELLER RESPONSE</span>
-
-                        <div className="seller-dispute-response">
-                          {dispute.sellerResponse ? (
-                            <>
-                              <strong>Seller response</strong>
-
-                              <span>
-                                {dispute.sellerResponse}
-                              </span>
-                            </>
-                          ) : (
-                            <span>
-                              No response from the seller yet.
-                            </span>
-                          )}
+                      <div className="escrow-action-panel admin-resolution-panel">
+                        <div><strong>Resolve this dispute</strong><p>Choose where the protected funds should go. Each decision requires confirmation.</p></div>
+                        <div className="button-group">
+                          <Button variant="secondary" icon="refresh" onClick={() => setResolution({ dispute, escrow, decision: "REFUND" })} disabled={pending !== null}>Refund buyer</Button>
+                          <Button icon="check" onClick={() => setResolution({ dispute, escrow, decision: "RELEASE" })} disabled={pending !== null}>Release to seller</Button>
                         </div>
                       </div>
-                    </div>
-
-                    {/* ADMIN DECISION */}
-                    <div className="seller-order-action">
-                      <div>
-                        <strong>Resolve this dispute</strong>
-
-                        <span>
-                          Choose whether the protected funds should go to
-                          the seller or return to the buyer.
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 10,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <button
-                          className="seller-ship-button"
-                          onClick={() =>
-                            resolveDispute(dispute.id, "RELEASE")
-                          }
-                          disabled={resolvingId === dispute.id}
-                        >
-                          <Icon name="check" size={17} />
-
-                          {resolvingId === dispute.id
-                            ? "Resolving..."
-                            : "Release Funds"}
-                        </button>
-
-                        <button
-                          className="seller-ship-button"
-                          onClick={() =>
-                            resolveDispute(dispute.id, "REFUND")
-                          }
-                          disabled={resolvingId === dispute.id}
-                        >
-                          <Icon name="shield" size={17} />
-
-                          {resolvingId === dispute.id
-                            ? "Resolving..."
-                            : "Refund Buyer"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </article>
+                    </>
+                  ) : !disputeError && <Alert tone="warning" title="Resolution unavailable"><p>The dispute ID was not returned. Refresh the queue before taking action.</p></Alert>}
+                </section>
+              </EscrowCard>
             );
           })}
         </div>
       )}
-    </section>
+
+      {resolution && (
+        <ConfirmDialog
+          title={resolution.decision === "RELEASE" ? "Release funds to the seller?" : "Refund the buyer?"}
+          description={resolution.decision === "RELEASE"
+            ? `Resolve this dispute in the seller’s favor and release ${formatMoney(resolution.escrow.amount)} for ${resolution.escrow.itemName || "this item"}.`
+            : `Resolve this dispute in the buyer’s favor and return ${formatMoney(resolution.escrow.amount)} for ${resolution.escrow.itemName || "this item"}.`}
+          confirmLabel={resolution.decision === "RELEASE" ? "Release to seller" : "Refund buyer"}
+          cancelLabel="Review evidence"
+          confirmVariant={resolution.decision === "REFUND" ? "danger" : "primary"}
+          tone={resolution.decision === "REFUND" ? "warning" : "default"}
+          loading={pending === `resolve-${resolution.dispute.id}`}
+          loadingLabel={resolution.decision === "RELEASE" ? "Releasing funds..." : "Processing refund..."}
+          onConfirm={resolveDispute}
+          onCancel={() => setResolution(null)}
+        />
+      )}
+    </div>
   );
-};
+}
 
 export default AdminEscrows;

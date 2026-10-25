@@ -1,99 +1,117 @@
+import { useEffect, useRef } from "react";
 import Logo from "./Logo";
 import Icon from "./Icon";
-import { jwtDecode } from "jwt-decode";
+import { getRoleLabel } from "../utils/auth";
+import { getNavigation } from "../utils/navigation";
 
-function Sidebar({ page, setPage, logout, token }) {
-let role = "";
+function Sidebar({ page, setPage, logout, role, open, onClose }) {
+  const groups = getNavigation(role);
+  const closeButtonRef = useRef(null);
 
-try {
-if (token) {
-const decodedToken = jwtDecode(token);
-role = (decodedToken.role || "")
-.replace(/^ROLE_/, "")
-.toUpperCase();
-}
-} catch (error) {
-console.error("Unable to decode authentication token:", error);
-}
+  useEffect(() => {
+    if (!open) return undefined;
 
-const isAdmin = role === "ADMIN";
-const isBuyer = role === "BUYER";
-const isSeller = role === "SELLER";
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
 
-const items = [
-  { key: "overview", label: "Overview", icon: "grid" },
-];
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
 
-if (isBuyer || isSeller) {
-  items.push({
-    key: "my-account",
-    label: "My Account",
-    icon: "wallet",
-  });
-}
+    document.addEventListener("keydown", handleKeyDown);
 
-if (isBuyer) {
-items.push(
-{ key: "escrow", label: "Initiate payment", icon: "shield" },
-{ key: "buyer-escrows", label: "My Escrows", icon: "shield" }
-);
-}
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus?.();
+    };
+  }, [open, onClose]);
 
-if (isSeller) {
-items.push({
-key: "seller-escrows",
-label: "Seller Escrows",
-icon: "package",
-});
-}
+  return (
+    <>
+      {open && (
+        <button
+          type="button"
+          className="sidebar-overlay"
+          onClick={onClose}
+          aria-label="Close navigation"
+        />
+      )}
 
-if (isAdmin) {
-items.push(
-{ key: "accounts", label: "Account lookup", icon: "wallet" },
-{ key: "create", label: "Create account", icon: "plus" },
-{ key: "admin-escrows", label: "Admin Disputes", icon: "shield" },
-{ key: "admin-ledger", label: "System Ledger", icon: "activity" }
-);
-}
-
-
-return ( <aside className="sidebar"> <div className="sidebar-brand"> <Logo size={38} /> <div> <strong>RevertPay</strong> <span>CORE LEDGER</span> </div> </div>
-
-
-  <div className="sidebar-section-label">WORKSPACE</div>
-
-  <nav className="side-nav">
-    {items.map((item) => (
-      <button
-        key={item.key}
-        className={page === item.key ? "current" : ""}
-        onClick={() => setPage(item.key)}
+      <aside
+        id="application-sidebar"
+        className={`sidebar ${open ? "sidebar-open" : ""}`}
+        aria-label="Application navigation"
       >
-        <Icon name={item.icon} />
-        <span>{item.label}</span>
-        {page === item.key && <i />}
-      </button>
-    ))}
-  </nav>
+        <div className="sidebar-brand">
+          <Logo size={38} />
+          <div className="sidebar-brand-copy">
+            <strong>RevertPay</strong>
+            <span>Financial operations</span>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="icon-button sidebar-close"
+            onClick={onClose}
+            aria-label="Close navigation"
+          >
+            <Icon name="close" size={20} />
+          </button>
+        </div>
 
-  <div className="sidebar-bottom">
-    <div className="integrity-box">
-      <div className="integrity-dot" />
-      <div>
-        <span>System status</span>
-        <strong>Ledger online</strong>
-      </div>
-    </div>
+        <nav className="sidebar-navigation">
+          {groups.map((group) => (
+            <div className="sidebar-group" key={group.label}>
+              <p className="sidebar-section-label">{group.label}</p>
+              <div className="side-nav">
+                {group.items.map((item) => {
+                  const current = page === item.key;
 
-    <button className="sign-out" onClick={logout}>
-      <Icon name="logout" />
-      Sign out
-    </button>
-  </div>
-</aside>
+                  return (
+                    <button
+                      type="button"
+                      key={item.key}
+                      className={current ? "current" : ""}
+                      onClick={() => setPage(item.key)}
+                      aria-current={current ? "page" : undefined}
+                    >
+                      <Icon name={item.icon} size={19} />
+                      <span>{item.label}</span>
+                      {current && <span className="nav-current-mark" aria-hidden="true" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
 
+        <div className="sidebar-bottom">
+          <div className="workspace-identity">
+            <div className="workspace-avatar" aria-hidden="true">
+              <Icon name="user" size={18} />
+            </div>
+            <div>
+              <span>Signed in as</span>
+              <strong>{getRoleLabel(role)}</strong>
+            </div>
+            <Icon name="lock" size={14} className="workspace-lock" />
+          </div>
 
-);
+          <button type="button" className="sign-out" onClick={logout}>
+            <Icon name="logout" size={18} />
+            Sign out
+          </button>
+        </div>
+      </aside>
+    </>
+  );
 }
 
 export default Sidebar;

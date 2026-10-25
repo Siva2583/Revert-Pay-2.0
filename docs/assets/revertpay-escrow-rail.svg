@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">RevertPay complete application flow</title>
+  <desc id="description">A static and animated map of RevertPay showing buyer, seller, and admin responsibilities; the complete escrow lifecycle including cancellation, expiry, automatic release, disputes, release and refund; and balanced ledger movements for funding, release, and refund.</desc>
+  <defs>
+    <linearGradient id="panel" x1="40" y1="20" x2="1160" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101813"/>
+      <stop offset="0.52" stop-color="#080B09"/>
+      <stop offset="1" stop-color="#17130D"/>
+    </linearGradient>
+    <linearGradient id="rail" x1="140" y1="242" x2="1060" y2="242" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C853"/>
+      <stop offset="0.55" stop-color="#4D8C68"/>
+      <stop offset="1" stop-color="#C6A15B"/>
+    </linearGradient>
+    <radialGradient id="emeraldGlow" cx="0" cy="0" r="1" gradientTransform="translate(90 215) rotate(90) scale(310 460)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C853" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#00C853" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="goldGlow" cx="0" cy="0" r="1" gradientTransform="translate(1110 420) rotate(90) scale(360 430)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C6A15B" stop-opacity="0.11"/>
+      <stop offset="1" stop-color="#C6A15B" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" stroke="#B8C7BC" stroke-opacity="0.03"/>
+    </pattern>
+    <filter id="pulseGlow" x="-300%" y="-300%" width="700%" height="700%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowEmerald" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L8 4L0 8Z" fill="#00C853"/>
+    </marker>
+    <marker id="arrowGold" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L8 4L0 8Z" fill="#C6A15B"/>
+    </marker>
+    <marker id="arrowMuted" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L8 4L0 8Z" fill="#71877A"/>
+    </marker>
+    <style>
+      .motion { display: inline; }
+      @media (prefers-reduced-motion: reduce) {
+        .motion { display: none; }
+      }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="748" rx="28" fill="url(#panel)" stroke="#2A3A30"/>
+  <rect x="1" y="1" width="1198" height="748" rx="28" fill="url(#grid)"/>
+  <rect width="1200" height="750" rx="28" fill="url(#emeraldGlow)"/>
+  <rect width="1200" height="750" rx="28" fill="url(#goldGlow)"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="40" y="37" fill="#C6A15B" font-size="19" font-weight="700" letter-spacing="2.8">REVERTPAY / APPLICATION FLOW</text>
+    <text x="40" y="58" fill="#8FA298" font-size="10.5" letter-spacing="1.2">BUYER + SELLER + ADMIN · ESCROW + DISPUTES + DOUBLE-ENTRY LEDGER</text>
+    <text x="1160" y="43" text-anchor="end" fill="#8FA298" font-size="10" letter-spacing="1.6">PROTECTED PAYMENTS · PROVABLE RECORDS</text>
+
+    <!-- Role responsibilities -->
+    <g>
+      <rect x="40" y="76" width="360" height="60" rx="15" fill="#0D1711" stroke="#28573B"/>
+      <text x="60" y="99" fill="#00C853" font-size="11.5" font-weight="700" letter-spacing="1.7">01 / BUYER</text>
+      <text x="60" y="120" fill="#C3D0C7" font-size="10.5">Initiate · fund · confirm delivery · dispute</text>
+
+      <rect x="420" y="76" width="360" height="60" rx="15" fill="#0D1410" stroke="#31493A"/>
+      <text x="440" y="99" fill="#74B58E" font-size="11.5" font-weight="700" letter-spacing="1.7">02 / SELLER</text>
+      <text x="440" y="120" fill="#C3D0C7" font-size="10.5">Record shipment · respond during review</text>
+
+      <rect x="800" y="76" width="360" height="60" rx="15" fill="#17130D" stroke="#5C4B2D"/>
+      <text x="820" y="99" fill="#C6A15B" font-size="11.5" font-weight="700" letter-spacing="1.7">03 / ADMIN</text>
+      <text x="820" y="120" fill="#D2C8B6" font-size="10.5">Review · release / refund · inspect ledger</text>
+    </g>
+
+    <text x="40" y="174" fill="#8FA298" font-size="10.5" font-weight="600" letter-spacing="2">ESCROW LIFECYCLE / ALL SUPPORTED PATHS</text>
+    <text x="945" y="157" text-anchor="middle" fill="#C6A15B" font-size="9.5" letter-spacing="1">AUTO-RELEASE · 5 MIN · 5s POLL</text>
+
+    <!-- Static connectors: the complete diagram remains visible without motion. -->
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <path d="M240 242H270" stroke="#315F45" stroke-width="2" marker-end="url(#arrowEmerald)"/>
+      <path d="M470 242H500" stroke="#315F45" stroke-width="2" marker-end="url(#arrowEmerald)"/>
+      <path d="M700 242H730" stroke="#315F45" stroke-width="2" marker-end="url(#arrowEmerald)"/>
+      <path d="M930 242H960" stroke="#6B6743" stroke-width="2" marker-end="url(#arrowGold)"/>
+
+      <path d="M830 210C830 160 1060 160 1060 210" stroke="#8A734C" stroke-width="1.5" stroke-dasharray="4 6" marker-end="url(#arrowGold)"/>
+
+      <path d="M140 274L155 370" stroke="#59665E" stroke-width="1.5" marker-end="url(#arrowMuted)"/>
+      <path d="M140 274L375 370" stroke="#6B6743" stroke-width="1.5" stroke-dasharray="4 6" marker-end="url(#arrowGold)"/>
+      <path d="M830 274L790 370" stroke="#8A734C" stroke-width="1.7" marker-end="url(#arrowGold)"/>
+      <path d="M890 402H960" stroke="#8A734C" stroke-width="1.7" marker-end="url(#arrowGold)"/>
+      <path d="M1060 370V274" stroke="#4D8C68" stroke-width="1.7" marker-end="url(#arrowEmerald)"/>
+      <path d="M1060 434V490" stroke="#8A734C" stroke-width="1.7" marker-end="url(#arrowGold)"/>
+    </g>
+
+    <!-- Decorative motion follows real application paths. -->
+    <g class="motion">
+      <path d="M240 242H960" stroke="url(#rail)" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 12" opacity="0.9">
+        <animate attributeName="stroke-dashoffset" from="0" to="-60" dur="3s" repeatCount="indefinite"/>
+      </path>
+      <path d="M830 210C830 160 1060 160 1060 210" stroke="#C6A15B" stroke-width="1.5" stroke-dasharray="2 10" opacity="0.8">
+        <animate attributeName="stroke-dashoffset" from="0" to="-48" dur="3.5s" repeatCount="indefinite"/>
+      </path>
+      <path d="M830 274L790 370L790 402H960L1060 402V490" stroke="#C6A15B" stroke-width="1.4" stroke-dasharray="2 11" opacity="0.65">
+        <animate attributeName="stroke-dashoffset" from="0" to="-52" dur="4s" repeatCount="indefinite"/>
+      </path>
+    </g>
+    <g class="motion" filter="url(#pulseGlow)">
+      <circle cx="240" cy="242" r="4.5" fill="#F2C96D">
+        <animateMotion path="M0 0H720" dur="8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1"/>
+      </circle>
+      <circle cx="830" cy="210" r="4" fill="#00C853">
+        <animateMotion path="M0 0C0 -50 230 -50 230 0" dur="6s" begin="1s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="140" cy="274" r="3.5" fill="#C6A15B">
+        <animateMotion path="M0 0L235 96" dur="7s" begin="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="830" cy="274" r="4" fill="#F2C96D">
+        <animateMotion path="M0 0L-40 96L-40 128H130L230 128V216" dur="9s" begin="3s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+
+    <!-- Main lifecycle -->
+    <g text-anchor="middle">
+      <rect x="40" y="210" width="200" height="64" rx="14" fill="#0B100D" stroke="#00C853" stroke-width="1.5"/>
+      <text x="140" y="237" fill="#F1F5F2" font-size="12.5" font-weight="700" letter-spacing="0.5">PAYMENT_INITIATED</text>
+      <text x="140" y="258" fill="#8FA298" font-size="9.5">Idempotency-key request</text>
+
+      <rect x="270" y="210" width="200" height="64" rx="14" fill="#0B100D" stroke="#30955B" stroke-width="1.5"/>
+      <text x="370" y="237" fill="#F1F5F2" font-size="13" font-weight="700" letter-spacing="1">CREATED</text>
+      <text x="370" y="258" fill="#8FA298" font-size="9.5">Confirmed within 40s</text>
+
+      <rect x="500" y="210" width="200" height="64" rx="14" fill="#0B100D" stroke="#4D8C68" stroke-width="1.5"/>
+      <text x="600" y="237" fill="#F1F5F2" font-size="13" font-weight="700" letter-spacing="1">FUNDED</text>
+      <text x="600" y="258" fill="#8FA298" font-size="9.5">Buyer → escrow holding</text>
+
+      <rect x="730" y="210" width="200" height="64" rx="14" fill="#0B100D" stroke="#829464" stroke-width="1.5"/>
+      <text x="830" y="237" fill="#F1F5F2" font-size="13" font-weight="700" letter-spacing="1">SHIPPED</text>
+      <text x="830" y="258" fill="#8FA298" font-size="9.5">Seller records shipment</text>
+
+      <rect x="960" y="210" width="200" height="64" rx="14" fill="#17130D" stroke="#C6A15B" stroke-width="1.7"/>
+      <text x="1060" y="237" fill="#F4E8D0" font-size="13" font-weight="700" letter-spacing="1">RELEASED</text>
+      <text x="1060" y="258" fill="#B9A98E" font-size="9.5">Delivery / auto / admin release</text>
+    </g>
+
+    <!-- Branch labels -->
+    <g font-size="9" letter-spacing="0.8">
+      <rect x="66" y="309" width="122" height="20" rx="10" fill="#0B100D" stroke="#26372D"/>
+      <text x="127" y="323" text-anchor="middle" fill="#8FA298">DECLINE ≤40s</text>
+
+      <rect x="245" y="306" width="170" height="20" rx="10" fill="#0B100D" stroke="#3F3826"/>
+      <text x="330" y="320" text-anchor="middle" fill="#B9A98E">40s TIMEOUT · 5s POLL</text>
+
+      <rect x="805" y="309" width="142" height="20" rx="10" fill="#0B100D" stroke="#3F3826"/>
+      <text x="876" y="323" text-anchor="middle" fill="#C6A15B">BUYER DISPUTES</text>
+
+      <text x="925" y="388" text-anchor="middle" fill="#8FA298">RESPOND</text>
+      <text x="1075" y="326" fill="#74B58E">RELEASE</text>
+      <text x="1075" y="468" fill="#C6A15B">REFUND</text>
+    </g>
+
+    <!-- Exceptional and dispute paths -->
+    <g text-anchor="middle">
+      <rect x="60" y="370" width="190" height="64" rx="14" fill="#0D100E" stroke="#59665E" stroke-width="1.4"/>
+      <text x="155" y="397" fill="#D5DDD7" font-size="12.5" font-weight="700" letter-spacing="1">CANCELLED</text>
+      <text x="155" y="418" fill="#7F8D84" font-size="9.5">Buyer declines · no transfer</text>
+
+      <rect x="280" y="370" width="190" height="64" rx="14" fill="#12110D" stroke="#6B6743" stroke-width="1.4"/>
+      <text x="375" y="397" fill="#DDD4C1" font-size="12.5" font-weight="700" letter-spacing="1">EXPIRED</text>
+      <text x="375" y="418" fill="#928872" font-size="9.5">Scheduler expiry · no transfer</text>
+
+      <rect x="690" y="370" width="200" height="64" rx="14" fill="#17130D" stroke="#C6A15B" stroke-width="1.5"/>
+      <text x="790" y="397" fill="#F4E8D0" font-size="12.5" font-weight="700" letter-spacing="0.7">UNDER_REVIEW</text>
+      <text x="790" y="418" fill="#B9A98E" font-size="9.5">Shipped escrow is disputed</text>
+
+      <rect x="960" y="370" width="200" height="64" rx="14" fill="#11150F" stroke="#829464" stroke-width="1.5"/>
+      <text x="1060" y="397" fill="#E4EBDF" font-size="12.5" font-weight="700" letter-spacing="0.7">ADMIN DECISION</text>
+      <text x="1060" y="418" fill="#9CA895" font-size="9.5">Reviews dispute · chooses outcome</text>
+
+      <rect x="960" y="490" width="200" height="64" rx="14" fill="#17130D" stroke="#C6A15B" stroke-width="1.7"/>
+      <text x="1060" y="517" fill="#F4E8D0" font-size="13" font-weight="700" letter-spacing="1">REFUNDED</text>
+      <text x="1060" y="538" fill="#B9A98E" font-size="9.5">Holding → buyer</text>
+    </g>
+
+    <!-- Cross-cutting application protections -->
+    <text x="40" y="476" fill="#8FA298" font-size="9.5" font-weight="600" letter-spacing="1.7">ENGINEERING GUARANTEES</text>
+    <g>
+      <rect x="40" y="490" width="850" height="64" rx="14" fill="#0B100D" stroke="#26372D"/>
+      <path d="M255 502V542M465 502V542M675 502V542" stroke="#26372D"/>
+
+      <text x="60" y="516" fill="#00C853" font-size="9.5" font-weight="700" letter-spacing="1">JWT + RBAC</text>
+      <text x="60" y="538" fill="#7F9587" font-size="8.5">Roles + ownership checks</text>
+
+      <text x="275" y="516" fill="#74B58E" font-size="9.5" font-weight="700" letter-spacing="1">IDEMPOTENCY</text>
+      <text x="275" y="538" fill="#7F9587" font-size="8.5">Safe initiation retries</text>
+
+      <text x="485" y="516" fill="#9FB97F" font-size="9.5" font-weight="700" letter-spacing="1">ORDERED LOCKING</text>
+      <text x="485" y="538" fill="#8F9A83" font-size="8.5">No duplicate release</text>
+
+      <text x="695" y="516" fill="#C6A15B" font-size="9.5" font-weight="700" letter-spacing="1">STATUS AUDIT</text>
+      <text x="695" y="538" fill="#A2957E" font-size="8.5">Actor + reason + timestamp</text>
+    </g>
+
+    <!-- Ledger movements -->
+    <g>
+      <rect x="40" y="585" width="1120" height="150" rx="20" fill="#090D0B" stroke="#2A3A30"/>
+      <text x="65" y="615" fill="#C6A15B" font-size="11" font-weight="700" letter-spacing="2">DOUBLE-ENTRY LEDGER / WHEN MONEY MOVES</text>
+      <text x="1135" y="615" text-anchor="end" fill="#71877A" font-size="9.5" letter-spacing="1">ATOMIC · BALANCED · SAME REFERENCE</text>
+
+      <rect x="60" y="632" width="340" height="74" rx="13" fill="#0D1711" stroke="#28573B"/>
+      <text x="80" y="655" fill="#00C853" font-size="10.5" font-weight="700" letter-spacing="1.5">FUND</text>
+      <text x="80" y="677" fill="#E4ECE6" font-size="11.5">BUYER → ESCROW_HOLDING</text>
+      <text x="80" y="696" fill="#7F9587" font-size="9.5">Debit buyer · Credit holding</text>
+
+      <rect x="430" y="632" width="340" height="74" rx="13" fill="#12150F" stroke="#4C5738"/>
+      <text x="450" y="655" fill="#9FB97F" font-size="10.5" font-weight="700" letter-spacing="1.5">RELEASE</text>
+      <text x="450" y="677" fill="#E4ECE6" font-size="11.5">ESCROW_HOLDING → SELLER</text>
+      <text x="450" y="696" fill="#8F9A83" font-size="9.5">Debit holding · Credit seller</text>
+
+      <rect x="800" y="632" width="340" height="74" rx="13" fill="#17130D" stroke="#5C4B2D"/>
+      <text x="820" y="655" fill="#C6A15B" font-size="10.5" font-weight="700" letter-spacing="1.5">REFUND</text>
+      <text x="820" y="677" fill="#EEE5D7" font-size="11.5">ESCROW_HOLDING → BUYER</text>
+      <text x="820" y="696" fill="#A2957E" font-size="9.5">Debit holding · Credit buyer</text>
+
+      <text x="600" y="725" text-anchor="middle" fill="#71877A" font-size="9.5">Derived balances · Atomic rollback · One financial release under concurrency</text>
+    </g>
+  </g>
+</svg>
