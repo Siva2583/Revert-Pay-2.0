@@ -1,33 +1,33 @@
-/* RevertPay workspace — reference-matched navy navigation, warm canvas, clear financial records. */
+/* RevertPay workspace — white navigation, calm canvas, clear financial records. */
 .app-shell { --sidebar-width: 240px; --content-max: 1480px; background: var(--background); }
-.app-shell .sidebar { padding: 30px 16px 20px; border-right: 1px solid var(--border); background: #10131B; box-shadow: none; }
+.app-shell .sidebar { padding: 30px 16px 20px; border-right: 1px solid var(--border); background: #FFFFFF; box-shadow: none; }
 .app-shell .sidebar-brand { padding: 0 10px 26px; border-bottom: 1px solid var(--border); }
-.app-shell .sidebar-brand-copy strong { color: var(--on-dark); font-size: 20px; letter-spacing: -0.04em; }
-.app-shell .sidebar-brand-copy span { color: var(--on-dark-muted); font-size: 10px; }
+.app-shell .sidebar-brand-copy strong { color: var(--text); font-size: 20px; letter-spacing: -0.04em; }
+.app-shell .sidebar-brand-copy span { color: var(--text-muted); font-size: 10px; }
 .app-shell .sidebar-navigation { margin-top: 30px; gap: 28px; }
-.app-shell .sidebar-section-label { color: var(--on-dark-muted); font-size: 9px; letter-spacing: 0.08em; }
+.app-shell .sidebar-section-label { color: var(--text-muted); font-size: 9px; letter-spacing: 0.08em; }
 .app-shell .side-nav { gap: 4px; }
-.app-shell .side-nav button { min-height: 44px; gap: 11px; padding: 10px 12px; border-radius: 7px; font-size: 12px; font-weight: 550; color: var(--on-dark-secondary); }
-.app-shell .side-nav button svg { color: #A9ADA3; }
-.app-shell .side-nav button:hover { background: #1B2029; color: var(--on-dark); }
-.app-shell .side-nav button.current { color: #C4FA42; background: #252C20; border-color: transparent; font-weight: 700; box-shadow: none; }
-.app-shell .side-nav button.current svg { color: #C4FA42; }
-.app-shell .nav-current-mark { background: #C4FA42; width: 5px; height: 5px; }
+.app-shell .side-nav button { min-height: 44px; gap: 11px; padding: 10px 12px; border-radius: 7px; font-size: 12px; font-weight: 550; color: var(--text-secondary); }
+.app-shell .side-nav button svg { color: #7A879A; }
+.app-shell .side-nav button:hover { background: var(--surface-subtle); color: var(--text); }
+.app-shell .side-nav button.current { color: var(--brand); background: #EDF3FF; border-color: transparent; font-weight: 700; box-shadow: none; }
+.app-shell .side-nav button.current svg { color: var(--brand); }
+.app-shell .nav-current-mark { background: var(--brand); width: 5px; height: 5px; }
 .app-shell .sidebar-bottom { padding-top: 18px; }
-.app-shell .workspace-identity { padding: 12px; border: 1px solid var(--dark-border); border-radius: 8px; background: #191D26; }
-.app-shell .workspace-avatar { background: #252B32; color: #C4FA42; border-radius: 50%; }
+.app-shell .workspace-identity { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-subtle); }
+.app-shell .workspace-avatar { background: #E8EEFA; color: var(--brand); border-radius: 50%; }
 .app-shell .sign-out { margin-top: 10px; font-size: 12px; }
-.app-shell .topbar { min-height: 106px; padding: 24px 36px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.app-shell .topbar { min-height: 106px; padding: 24px 36px; background: #FFFFFF; border-bottom: 1px solid var(--border); }
 .app-shell .topbar h1 { font-size: 25px; font-weight: 750; letter-spacing: -0.045em; }
 .app-shell .breadcrumb { color: var(--text-muted); font-size: 10px; }
 .app-shell .topbar-description { font-size: 12px; }
-.app-shell .session-badge { color: var(--text-secondary); background: var(--surface); border-color: var(--border); }
+.app-shell .session-badge { color: var(--text-secondary); background: #FFFFFF; border-color: var(--border); }
 .app-shell .role-badge { background: var(--brand-soft); border-color: var(--brand-border); color: var(--brand); }
 .app-shell .workspace-content { padding: 28px 36px 56px; }
 .app-shell .page-stack { gap: 24px; }
 .app-shell .overview-topline { font-size: 11px; color: var(--text-muted); }
 .app-shell .overview-topline > span { color: var(--text-secondary); }
-.app-shell .overview-welcome { grid-template-columns: minmax(0, 1fr) 220px; gap: 32px; padding: 30px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.app-shell .overview-welcome { grid-template-columns: minmax(0, 1fr) 220px; gap: 32px; padding: 30px; border: 1px solid var(--border); border-radius: 12px; background: #FFFFFF; color: var(--text); box-shadow: var(--shadow-sm); }
 .app-shell .overview-welcome-copy > .eyebrow { color: var(--text-muted); }
 .app-shell .overview-welcome-copy h2 { max-width: 650px; margin-top: 12px; font-size: clamp(26px, 2.7vw, 36px); font-weight: 750; line-height: 1.2; letter-spacing: -0.045em; }
 .app-shell .overview-welcome-copy > p:not(.eyebrow) { color: var(--text-secondary); max-width: 560px; font-size: 12px; line-height: 1.8; }
@@ -36,16 +36,16 @@
 .app-shell .hero-balance > strong { color: var(--text); font-size: clamp(34px, 3.5vw, 46px); font-weight: 650; letter-spacing: -0.05em; line-height: 1.2; }
 .app-shell .hero-balance > small { color: var(--text-muted); font-size: 10px; }
 .app-shell .overview-welcome-copy .button-group { margin-top: 24px; }
-.app-shell .attention-card { align-self: stretch; justify-content: center; padding: 24px; border: 1px solid #D4DCC0; border-radius: 9px; background: #EEF2E3; color: var(--text); }
-.app-shell .attention-card:hover { background: #EEF2E3; transform: none; border-color: #A9BA7D; }
-.app-shell .attention-card-icon { color: var(--brand); background: #E0E9CB; }
+.app-shell .attention-card { align-self: stretch; justify-content: center; padding: 24px; border: 1px solid #DAE5F8; border-radius: 9px; background: #F3F7FE; color: var(--text); }
+.app-shell .attention-card:hover { background: #EDF3FF; transform: none; border-color: #B8CDF4; }
+.app-shell .attention-card-icon { color: var(--brand); background: #E5EDFD; }
 .app-shell .attention-card-label { margin-top: 20px; font-size: 10px; color: var(--text-secondary); }
 .app-shell .attention-card > strong { font-size: 48px; font-weight: 600; color: var(--text); letter-spacing: -0.05em; }
 .app-shell .attention-card > p { font-size: 11px; line-height: 1.7; color: var(--text-secondary); }
 .app-shell .attention-link { color: var(--brand); font-size: 11px; margin-top: 20px; }
 .app-shell .overview-metrics { margin: 0; gap: 16px; }
 .app-shell .metric-card { min-height: 142px; padding: 22px; }
-.app-shell .metric-card-emphasis { border-color: var(--border); background: var(--surface); }
+.app-shell .metric-card-emphasis { border-color: var(--border); background: #FFFFFF; }
 .app-shell .metric-label { color: var(--text-secondary); font-size: 11px; font-weight: 550; }
 .app-shell .metric-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
 .app-shell .metric-value { margin-top: 16px; font-size: 29px; font-weight: 650; letter-spacing: -0.04em; }
@@ -57,11 +57,11 @@
 .app-shell .activity-primary span { font-size: 10px; }
 .app-shell .activity-secondary > strong { font-size: 12px; font-weight: 650; }
 .app-shell .activity-secondary time { font-size: 10px; }
-.app-shell .account-balance-block { background: #10131B; color: var(--on-dark); border-color: var(--dark-border); }
+.app-shell .account-balance-block { background: #F3F7FE; color: var(--text); border-color: var(--border); }
 .app-shell .account-balance { color: var(--text); font-size: clamp(32px, 3.5vw, 44px); font-weight: 650; }
 .app-shell .balance-explanation { color: var(--text-secondary); }
 .app-shell .account-identity-block { padding: 28px; }
-.app-shell .guidance-panel { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
+.app-shell .guidance-panel { border: 1px solid var(--border); border-radius: 12px; background: #FFFFFF; color: var(--text); }
 .app-shell .guidance-panel > p, .app-shell .guidance-list p { color: var(--text-secondary); }
 .app-shell .guidance-panel .eyebrow { color: var(--brand); }
 .app-shell .guidance-list > div > span { background: var(--brand-soft); color: var(--brand); }
@@ -106,52 +106,3 @@
   .app-shell .ledger-activity-item, .app-shell .escrow-activity-item { padding: 16px 20px; }
   .app-shell .account-identity-block { padding: 22px; }
 }
-
-/* Dark brand surfaces share the sign-in cover's palette. */
-.app-shell .overview-welcome,
-.app-shell .guidance-panel,
-.app-shell .account-balance-block {
-  --text: #FAFAF8;
-  --text-secondary: #B5B7AE;
-  --text-muted: #A9ADA3;
-  --border: #32353C;
-  --brand: #C4FA42;
-  --brand-hover: #D3FF75;
-  --brand-pressed: #ADD837;
-  --on-brand: #10131B;
-  background-color: #10131B;
-  color: var(--text);
-  border-color: #32353C;
-}
-.app-shell .overview-welcome {
-  background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-.app-shell .overview-welcome .hero-balance > strong { color: #C4FA42; }
-.app-shell .overview-welcome .button-secondary { color: #FAFAF8; border-color: #42473C; background: #191D26; }
-.app-shell .overview-welcome .button-secondary:hover:not(:disabled) { border-color: #879A5E; background: #242B23; }
-.app-shell .overview-welcome .attention-card { background: #191D26; border-color: #32353C; }
-.app-shell .overview-welcome .attention-card:hover { background: #22292A; border-color: #73834D; }
-.app-shell .overview-welcome .attention-card-icon { background: #252C20; color: #C4FA42; }
-.app-shell .sidebar { border-right-color: #32353C; }
-.app-shell .sidebar-brand { border-bottom-color: #32353C; }
-.app-shell .sidebar-brand svg rect { fill: transparent; stroke: transparent; }
-.app-shell .sidebar-brand svg path { stroke: #C4FA42; }
-.app-shell .sidebar-brand svg path:nth-of-type(2) { stroke: #FAFAF8; }
-.app-shell .sidebar-brand svg path:nth-of-type(3) { fill: #10131B; }
-.app-shell .sidebar-brand-copy strong { color: #FAFAF8; }
-.app-shell .sidebar .sign-out { color: #B5B7AE; }
-.app-shell .sidebar .sign-out:hover { background: #302129; color: #FFB0B8; }
-.app-shell .sidebar .sidebar-close { background: #191D26; border-color: #32353C; color: #FAFAF8; }
-.app-shell .sidebar button:focus-visible { outline-color: #C4FA42; }
-.app-shell .overview-welcome .button:focus-visible { outline-color: #C4FA42; }
-.app-shell .session-badge { background: #EEF2E3; color: #52672B; border-color: #CCD5B4; }
-.app-shell .role-badge { background: #F0F1EB; color: #575E51; border-color: #DDDFD6; }
-.app-shell .metric-icon { background: #EEF2E3; color: #657A30; }
-.app-shell .guidance-list li { border-top-color: #32353C; }
-.app-shell .guidance-list li > span { color: #C4FA42; }
-.app-shell .guidance-note { background: #191D26; border-color: #32353C; }
-.app-shell .guidance-panel .eyebrow { color: #C4FA42; }
-.app-shell .guidance-panel .guidance-note p { color: #B5B7AE; }
-.app-shell .account-balance-block { background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 56px 56px; }
-.app-shell .account-balance { color: #C4FA42; }

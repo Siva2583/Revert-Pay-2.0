@@ -1,37 +1,37 @@
 :root {
   color-scheme: light;
-  --background: #F5F5F0;
-  --surface: #FAFAF7;
-  --surface-subtle: #F0F1EB;
-  --surface-muted: #E9EBE3;
-  --surface-brand: #EEF2E3;
-  --text: #10131B;
-  --text-secondary: #575E51;
-  --text-muted: #70766A;
-  --border: #DDDFD6;
-  --border-strong: #C9CEC0;
-  --brand: #10131B;
-  --brand-hover: #252A35;
-  --brand-pressed: #080A10;
-  --brand-deep: #10131B;
-  --brand-emerald: #657A30;
-  --brand-soft: #EEF2E3;
-  --brand-border: #CCD5B4;
-  --accent: #C4FA42;
-  --accent-hover: #D3FF75;
+  --background: #F5F7FA;
+  --surface: #FFFFFF;
+  --surface-subtle: #F8FAFC;
+  --surface-muted: #EEF2F6;
+  --surface-brand: #EFF5FF;
+  --text: #172B4D;
+  --text-secondary: #526178;
+  --text-muted: #66758C;
+  --border: #E3E8EF;
+  --border-strong: #C5CFDC;
+  --brand: #255CE5;
+  --brand-hover: #1D4BC4;
+  --brand-pressed: #193FA3;
+  --brand-deep: #172B4D;
+  --brand-emerald: #255CE5;
+  --brand-soft: #EFF5FF;
+  --brand-border: #C5D7FF;
+  --accent: #255CE5;
+  --accent-hover: #1D4BC4;
   --highlight: #986414;
   --highlight-hover: #795010;
   --highlight-soft: #FFFAEB;
   --highlight-ink: #795010;
   --highlight-muted: #986414;
-  --ink: #10131B;
-  --on-brand: #FAFAF7;
-  --on-dark: #FAFAF8;
-  --on-dark-secondary: #B5B7AE;
-  --on-dark-muted: #A9ADA3;
-  --dark-border: #32353C;
-  --dark-surface: #10131B;
-  --dark-surface-hover: #191D26;
+  --ink: #172B4D;
+  --on-brand: #FFFFFF;
+  --on-dark: #172B4D;
+  --on-dark-secondary: #526178;
+  --on-dark-muted: #66758C;
+  --dark-border: #E3E8EF;
+  --dark-surface: #FFFFFF;
+  --dark-surface-hover: #F0F4FA;
   --success: #147D55;
   --success-soft: #ECF9F2;
   --success-border: #B9E4CE;
@@ -42,10 +42,10 @@
   --error-hover: #A62431;
   --error-soft: #FFF1F2;
   --error-border: #F2C5CB;
-  --info: #52672B;
-  --info-soft: #EEF2E3;
-  --info-border: #CCD5B4;
-  --focus: #657A30;
+  --info: #255CE5;
+  --info-soft: #EFF5FF;
+  --info-border: #C5D7FF;
+  --focus: #255CE5;
   --font-sans: "Manrope Variable", Manrope, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --space-1: 4px;
@@ -60,10 +60,10 @@
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 18px;
-  --shadow-sm: 0 1px 2px rgba(16, 19, 27, 0.04);
-  --shadow-md: 0 12px 30px rgba(16, 19, 27, 0.08);
-  --shadow-lg: 0 24px 70px rgba(16, 19, 27, 0.14);
-  --focus-ring: 0 0 0 3px rgba(101, 122, 48, 0.14);
+  --shadow-sm: 0 1px 2px rgba(23, 43, 77, 0.04);
+  --shadow-md: 0 12px 30px rgba(23, 43, 77, 0.08);
+  --shadow-lg: 0 24px 70px rgba(23, 43, 77, 0.14);
+  --focus-ring: 0 0 0 3px rgba(37, 92, 229, 0.14);
   --motion-fast: 150ms;
   --motion-normal: 220ms;
   --sidebar-width: 256px;
@@ -160,7 +160,7 @@ a {
 }
 
 ::selection {
-  background: #E3F3BA;
+  background: #DCE8FF;
   color: var(--brand-deep);
 }
 
