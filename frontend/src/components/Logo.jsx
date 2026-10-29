@@ -8,39 +8,39 @@ function LogoMark({ size = 40 }) {
       role="img"
       aria-label="RevertPay"
     >
-      <rect width="100" height="100" rx="24" fill="#0A0D0B" />
+      <rect width="100" height="100" rx="24" fill="#255CE5" />
       <rect
         x="1"
         y="1"
         width="98"
         height="98"
         rx="23"
-        stroke="#343B35"
+        stroke="#255CE5"
       />
       <path
         d="M46 23H35L23 35v30l12 12h11"
-        stroke="#00C833"
+        stroke="#FFFFFF"
         strokeWidth="7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M54 23h11l12 12v30L65 77H54"
-        stroke="#F5F5F0"
+        stroke="#FFFFFF"
         strokeWidth="7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="m50 36 14 14-14 14-14-14 14-14Z"
-        fill="#0A0D0B"
-        stroke="#C9A227"
+        fill="#255CE5"
+        stroke="#FFFFFF"
         strokeWidth="6"
         strokeLinejoin="round"
       />
       <path
         d="M43 50h14"
-        stroke="#C9A227"
+        stroke="#FFFFFF"
         strokeWidth="4"
         strokeLinecap="round"
       />
@@ -69,7 +69,7 @@ function Logo({
       <Mark size={size} />
       <span
         className="logo-wordmark"
-        style={{ color: light ? "#F5F5F0" : "#E9EDE9" }}
+        style={{ color: light ? "#FFFFFF" : "#172B4D" }}
       >
         RevertPay
       </span>
