@@ -27,12 +27,12 @@
 
 .app-shell .sidebar-brand {
   padding: 0 8px 25px;
-  border-bottom: 1px solid rgba(245, 245, 240, 0.09);
+  border-bottom: 1px solid rgba(245, 245, 245, 0.09);
 }
 
 .app-shell .sidebar-brand svg {
   border-radius: 13px;
-  box-shadow: 0 0 0 1px rgba(245, 245, 240, 0.1), 0 10px 26px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 1px rgba(245, 245, 245, 0.1), 0 10px 26px rgba(0, 0, 0, 0.18);
 }
 
 .app-shell .sidebar-brand-copy strong {
@@ -74,20 +74,20 @@
   height: 34px;
   flex: 0 0 auto;
   padding: 8px;
-  border: 1px solid rgba(245, 245, 240, 0.08);
+  border: 1px solid rgba(245, 245, 245, 0.08);
   border-radius: 9px;
-  background: rgba(245, 245, 240, 0.035);
+  background: rgba(245, 245, 245, 0.035);
   color: var(--on-dark-muted);
   transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease;
 }
 
 .app-shell .side-nav button:hover {
-  background: rgba(245, 245, 240, 0.055);
+  background: rgba(109, 143, 99, 0.15);
   color: var(--on-dark);
 }
 
 .app-shell .side-nav button:hover svg {
-  border-color: rgba(245, 245, 240, 0.13);
+  border-color: rgba(245, 245, 245, 0.13);
   color: var(--on-dark);
 }
 
@@ -110,8 +110,8 @@
 }
 
 .app-shell .side-nav button.current svg {
-  border-color: rgba(0, 200, 51, 0.22);
-  background: rgba(0, 200, 51, 0.1);
+  border-color: rgba(57, 255, 136, 0.22);
+  background: rgba(57, 255, 136, 0.1);
   color: var(--brand);
 }
 
@@ -129,15 +129,15 @@
   padding: 13px;
   border: 1px solid var(--dark-border);
   border-radius: 14px;
-  background: rgba(245, 245, 240, 0.035);
+  background: rgba(245, 245, 245, 0.035);
 }
 
 .app-shell .workspace-avatar {
   width: 36px;
   height: 36px;
-  border: 1px solid rgba(201, 162, 39, 0.18);
+  border: 1px solid rgba(109, 143, 99, 0.18);
   border-radius: 11px;
-  background: rgba(201, 162, 39, 0.1);
+  background: rgba(109, 143, 99, 0.1);
   color: var(--highlight);
 }
 
@@ -204,11 +204,11 @@
 }
 
 .app-shell .button-primary {
-  box-shadow: 0 8px 20px rgba(21, 69, 53, 0.15);
+  box-shadow: 0 8px 20px rgba(109, 143, 99, 0.15);
 }
 
 .app-shell .button-secondary {
-  background: var(--surface);
+  background: var(--brand-pressed);
 }
 
 .app-shell .section-icon {
@@ -261,7 +261,7 @@
   max-width: 680px;
   margin-top: 28px;
   padding-top: 23px;
-  border-top: 1px solid rgba(245, 245, 240, 0.13);
+  border-top: 1px solid rgba(245, 245, 245, 0.13);
 }
 
 .app-shell .hero-balance > span {
@@ -310,8 +310,8 @@
 }
 
 .app-shell .overview-welcome .button-secondary {
-  border-color: rgba(245, 245, 240, 0.16);
-  background: rgba(245, 245, 240, 0.055);
+  border-color: var(--brand-pressed);
+  background: var(--brand-pressed);
   color: var(--on-dark);
 }
 
@@ -349,7 +349,7 @@
 .app-shell .attention-link {
   width: 100%;
   padding-top: 17px;
-  border-top: 1px solid rgba(245, 245, 240, 0.12);
+  border-top: 1px solid rgba(245, 245, 245, 0.12);
   font-weight: 720;
 }
 
@@ -420,7 +420,7 @@
 }
 
 .app-shell .metric-card-emphasis .metric-icon {
-  background: rgba(0, 200, 51, 0.1);
+  background: rgba(57, 255, 136, 0.1);
   color: var(--accent);
 }
 
@@ -537,12 +537,12 @@
 }
 
 .app-shell .guidance-list li {
-  border-top-color: rgba(245, 245, 240, 0.11);
+  border-top-color: rgba(245, 245, 245, 0.11);
 }
 
 .app-shell .guidance-note {
-  border-color: rgba(201, 162, 39, 0.18);
-  background: rgba(201, 162, 39, 0.07);
+  border-color: rgba(109, 143, 99, 0.18);
+  background: rgba(109, 143, 99, 0.07);
 }
 
 .app-shell .guidance-note svg {
@@ -669,7 +669,7 @@
   border-color: var(--highlight-muted);
   background: var(--highlight-soft);
   color: var(--highlight-ink);
-  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.2);
+  box-shadow: 0 0 0 4px rgba(109, 143, 99, 0.2);
 }
 
 .app-shell .escrow-action-panel,
@@ -717,7 +717,7 @@
 }
 
 .app-shell .data-table tbody tr:nth-child(even) {
-  background: rgba(245, 245, 240, 0.025);
+  background: rgba(245, 245, 245, 0.025);
 }
 
 .app-shell .data-table tbody tr:hover {
