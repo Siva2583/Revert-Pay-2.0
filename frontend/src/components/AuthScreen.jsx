@@ -110,7 +110,7 @@ function AuthScreen({ onLogin }) {
   const heading = forgotPassword
     ? { eyebrow: "Password recovery", title: "Reset your password", description: "Request a secure reset link for your registered email." }
     : mode === "login"
-      ? { eyebrow: "Secure sign in", title: "Welcome back", description: "Enter your credentials to access your financial workspace." }
+      ? { eyebrow: "Secure sign in", title: "Welcome back.", description: "Enter your credentials to access your ledger workspace." }
       : { eyebrow: "New workspace", title: "Create your account", description: "Choose a role and register with the existing RevertPay workflow." };
 
   return (
@@ -121,18 +121,18 @@ function AuthScreen({ onLogin }) {
         <div className="auth-brand"><Logo size={40} withWordmark light /></div>
 
         <div className="auth-copy">
-          <p className="eyebrow">Protected payments · Provable records</p>
-          <h1>Money moves. <span>Proof stays.</span></h1>
-          <p>Escrow with a memory. Every payment, transition, debit, and credit—organized in one exact financial workspace.</p>
+          <p className="eyebrow">Ledger-first escrow infrastructure</p>
+          <h1>Payments should<br />be <span>provable.</span></h1>
+          <p>A secure transaction workspace built on immutable ledger records, derived balances, and financial correctness.</p>
         </div>
 
         <div className="auth-principles" aria-label="RevertPay principles">
-          <span><Icon name="book" size={17} />Immutable ledger</span>
-          <span><Icon name="shield" size={17} />Protected escrow</span>
-          <span><Icon name="activity" size={17} />Traceable balances</span>
+          <article><Icon name="book" size={19} /><strong>Immutable ledger</strong><p>Every movement is recorded permanently.</p></article>
+          <article><Icon name="shield" size={19} /><strong>Secure access</strong><p>JWT-protected account operations.</p></article>
+          <article><Icon name="activity" size={19} /><strong>Derived balances</strong><p>Credits minus debits — never mutable totals.</p></article>
         </div>
 
-        <p className="auth-footer-note"><Icon name="lock" size={14} />JWT-protected account operations</p>
+        <p className="auth-footer-note">RevertPay / Financial transaction workspace</p>
       </section>
 
       <section className="auth-form-panel">
@@ -194,7 +194,7 @@ function AuthScreen({ onLogin }) {
                   disabled={loading}
                   className="button-full"
                 >
-                  {mode === "login" ? "Sign in" : "Create account"}
+                  {mode === "login" ? "Enter workspace" : "Create account"}
                 </Button>
               </>
             )}
